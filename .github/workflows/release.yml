@@ -50,7 +50,9 @@ jobs:
         run: |
           cargo fmt --check
           cargo clippy --workspace --all-targets -- -D warnings
-          cargo test -q
+          cargo test -q --workspace --exclude deco-cli
+          cargo test -q -p deco-cli --lib
+          cargo test -q -p deco-cli --test cli_smoke
           cargo test -q -p deco-cli --test parity_harness
 
       - name: Build release binary

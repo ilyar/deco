@@ -35,10 +35,20 @@ jobs:
       - name: Build root binary for integration tests
         run: cargo build -q -p deco
 
-      - name: Run workspace tests
+      - name: Run workspace tests except deco-cli integration suites
         env:
           CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
-        run: cargo test -q
+        run: cargo test -q --workspace --exclude deco-cli
+
+      - name: Run deco-cli library tests
+        env:
+          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
+        run: cargo test -q -p deco-cli --lib
+
+      - name: Run deco-cli smoke tests
+        env:
+          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
+        run: cargo test -q -p deco-cli --test cli_smoke
 
       - name: Run local parity harness
         env:
