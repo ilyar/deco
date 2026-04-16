@@ -2,6 +2,7 @@ mod support;
 
 use std::env;
 use std::path::PathBuf;
+use std::process::Command;
 
 use support::harness::{ParityHarness, ParityHarnessConfig};
 
@@ -23,7 +24,7 @@ fn parity_manifest_is_loadable() {
 
 #[test]
 fn parity_fixture_runs_against_local_deco() {
-    let deco_binary = PathBuf::from(env!("CARGO_BIN_EXE_deco"));
+    let deco_binary = resolve_local_deco_binary();
     let harness = ParityHarness::new(ParityHarnessConfig {
         deco_binary,
         upstream_binary: None,
@@ -51,7 +52,7 @@ fn parity_fixture_runs_against_local_deco() {
 fn parity_fixture_can_compare_with_upstream_when_configured() {
     let (upstream_binary, upstream_prefix_args) =
         resolve_upstream_runner().expect("upstream runner must be configured");
-    let deco_binary = PathBuf::from(env!("CARGO_BIN_EXE_deco"));
+    let deco_binary = resolve_local_deco_binary();
     let harness = ParityHarness::new(ParityHarnessConfig {
         deco_binary,
         upstream_binary: Some(upstream_binary),
@@ -63,7 +64,11 @@ fn parity_fixture_can_compare_with_upstream_when_configured() {
         .load_manifest("tests/fixtures/parity/manifest.example.json")
         .expect("fixture manifest should parse");
 
-    for fixture in harness.filter_fixtures(&manifest.fixtures) {
+    for fixture in harness
+        .filter_fixtures(&manifest.fixtures)
+        .into_iter()
+        .filter(|fixture| fixture.compare_with_upstream)
+    {
         let deco_run = harness
             .run_fixture(fixture, harness.config.deco_binary.clone())
             .expect("deco fixture should run");
@@ -98,4 +103,31 @@ fn resolve_upstream_runner() -> Option<(PathBuf, Vec<String>)> {
     }
 
     None
+}
+
+fn resolve_local_deco_binary() -> PathBuf {
+    if let Some(binary) = env::var_os("CARGO_BIN_EXE_deco").map(PathBuf::from) {
+        return binary;
+    }
+
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("deco-cli should live under <workspace>/crates/deco-cli")
+        .to_path_buf();
+    let candidate = workspace_root.join("target").join("debug").join("deco");
+    if candidate.exists() {
+        return candidate;
+    }
+
+    let status = Command::new("cargo")
+        .arg("build")
+        .arg("-q")
+        .arg("-p")
+        .arg("deco")
+        .current_dir(&workspace_root)
+        .status()
+        .expect("building root deco binary should succeed");
+    assert!(status.success(), "building root deco binary should succeed");
+    candidate
 }

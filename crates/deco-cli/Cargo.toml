@@ -4,9 +4,8 @@ version.workspace = true
 edition.workspace = true
 license.workspace = true
 
-[[bin]]
-name = "deco"
-path = "src/main.rs"
+[lib]
+path = "src/lib.rs"
 
 [dependencies]
 clap.workspace = true

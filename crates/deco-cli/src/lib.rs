@@ -9,7 +9,7 @@ use deco_core_model::{CommandEnvelope, CommandKind, DecoError};
 
 use crate::cli::{Cli, Commands};
 
-fn main() -> ExitCode {
+pub fn main_entry() -> ExitCode {
     let cli = Cli::parse();
     if let Err(error) = run(cli) {
         eprintln!("error: {}", error);
