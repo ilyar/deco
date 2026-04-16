@@ -2,6 +2,7 @@
 name = "deco"
 version.workspace = true
 edition.workspace = true
+authors.workspace = true
 license.workspace = true
 description = "Rust-first dev container CLI"
 default-run = "deco"
@@ -32,8 +33,9 @@ resolver = "2"
 
 [workspace.package]
 edition = "2024"
+authors = ["ilyar"]
 license = "MIT"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 
 [workspace.dependencies]
 clap = { version = "4.5.39", features = ["derive"] }

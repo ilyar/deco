@@ -1,10 +1,13 @@
-name: CI
+name: Tests
 
 on:
   push:
     branches:
       - main
   pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   rust:

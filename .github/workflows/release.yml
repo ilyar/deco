@@ -1,0 +1,135 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TARGET_TRIPLE: x86_64-unknown-linux-gnu
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - name: Validate tag against binary version
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_version="${GITHUB_REF_NAME#v}"
+          actual_version="$(cargo run -q -p deco -- --version | awk '{print $2}')"
+          if [[ "$actual_version" != "$expected_version" ]]; then
+            echo "tag version $expected_version does not match binary version $actual_version" >&2
+            exit 1
+          fi
+
+      - name: Run release quality gates
+        run: |
+          cargo fmt --check
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test -q
+          cargo test -q -p deco-cli --test parity_harness
+
+      - name: Build release binary
+        run: cargo build --release --locked
+
+      - name: Package release assets
+        id: package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          package_name="deco-${version}-${TARGET_TRIPLE}"
+          mkdir -p "dist/${package_name}"
+          cp target/release/deco "dist/${package_name}/deco"
+          cp LICENSE "dist/${package_name}/LICENSE"
+          cp README.md "dist/${package_name}/README.md"
+          tar -C dist -czf "dist/${package_name}.tar.gz" "${package_name}"
+          sha256sum "dist/${package_name}.tar.gz" > "dist/${package_name}.tar.gz.sha256"
+          echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
+          echo "archive_path=dist/${package_name}.tar.gz" >> "$GITHUB_OUTPUT"
+          echo "checksum_path=dist/${package_name}.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-assets
+          path: |
+            ${{ steps.package.outputs.archive_path }}
+            ${{ steps.package.outputs.checksum_path }}
+
+      - name: Generate provenance attestation for archive
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.package.outputs.archive_path }}
+
+      - name: Generate provenance attestation for checksum
+        uses: actions/attest@v4
+        with:
+          subject-path: ${{ steps.package.outputs.checksum_path }}
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          cat > RELEASE_NOTES.md <<EOF
+          ## deco ${GITHUB_REF_NAME}
+
+          First public alpha release.
+
+          Included assets:
+
+          - \`${{ steps.package.outputs.package_name }}.tar.gz\`
+          - \`${{ steps.package.outputs.package_name }}.tar.gz.sha256\`
+
+          Provenance:
+
+          This release publishes GitHub artifact attestations for the archive and checksum so consumers can verify the supply chain with:
+
+          \`\`\`sh
+          gh attestation verify ${{ steps.package.outputs.package_name }}.tar.gz -R ${{ github.repository }}
+          \`\`\`
+
+          License: MIT
+          Author: ilyar
+          EOF
+
+      - name: Create or update GitHub Release
+        shell: bash
+        run: |
+          set -euo pipefail
+          prerelease_flag=""
+          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
+            prerelease_flag="--prerelease"
+          fi
+
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            gh release upload "${GITHUB_REF_NAME}" \
+              "${{ steps.package.outputs.archive_path }}" \
+              "${{ steps.package.outputs.checksum_path }}" \
+              --clobber
+          else
+            gh release create "${GITHUB_REF_NAME}" \
+              "${{ steps.package.outputs.archive_path }}" \
+              "${{ steps.package.outputs.checksum_path }}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes-file RELEASE_NOTES.md \
+              ${prerelease_flag}
+          fi

@@ -1,5 +1,8 @@
 # Installing and Releasing
 
+License: MIT
+Author: ilyar
+
 ## Prerequisites
 
 - Rust stable toolchain with `cargo`
@@ -35,7 +38,8 @@ make test
 make parity
 ```
 
-The same commands are documented in `docs/contributing.md`.
+The maintained developer guide lives in [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1).
+The contribution workflow lives in [CONTRIBUTING.md](/home/ilyar/startup/deco/repo/deco/CONTRIBUTING.md:1).
 
 ## Local release build
 
@@ -54,5 +58,5 @@ target/release/deco
 If you need a local archive, create it explicitly from the built binary, for example:
 
 ```sh
-tar -czf deco-$(cargo pkgid | sed 's/.*#//').tar.gz -C target/release deco
+tar -czf deco-$(cargo run -q -p deco -- --version | awk '{print $2}').tar.gz LICENSE -C target/release deco
 ```

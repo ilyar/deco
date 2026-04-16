@@ -159,14 +159,14 @@ checksum = "1d07550c9036bf2ae0c684c4297d503f838287c83c53686d05370d0e139ae570"
 
 [[package]]
 name = "deco"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "deco-cli",
 ]
 
 [[package]]
 name = "deco-cli"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "assert_cmd",
  "clap",
@@ -185,7 +185,7 @@ dependencies = [
 
 [[package]]
 name = "deco-config"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "deco-core-model",
  "jsonc-parser",
@@ -195,7 +195,7 @@ dependencies = [
 
 [[package]]
 name = "deco-core-model"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "serde",
  "thiserror",
@@ -203,7 +203,7 @@ dependencies = [
 
 [[package]]
 name = "deco-engine"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "deco-core-model",
  "serde",
@@ -213,7 +213,7 @@ dependencies = [
 
 [[package]]
 name = "deco-features"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "deco-config",
  "deco-core-model",
@@ -225,7 +225,7 @@ dependencies = [
 
 [[package]]
 name = "deco-lifecycle"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "serde",
  "thiserror",
@@ -233,7 +233,7 @@ dependencies = [
 
 [[package]]
 name = "deco-lockfile"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "serde",
  "serde_json",
@@ -243,7 +243,7 @@ dependencies = [
 
 [[package]]
 name = "deco-templates"
-version = "0.1.0"
+version = "1.0.0-alpha.1"
 dependencies = [
  "deco-core-model",
  "serde",
