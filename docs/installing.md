@@ -29,7 +29,7 @@ Each archive has a matching `.sha256` file and a GitHub artifact attestation.
 ## Prerequisites
 
 - Rust stable toolchain with `cargo`
-- Linux or macOS shell environment
+- Linux, macOS, or FreeBSD shell environment
 
 Run all commands from `repo/deco`.
 
@@ -52,6 +52,28 @@ deco --help
 deco --version
 ```
 
+## Install with `curl | bash`
+
+For Linux, macOS, and FreeBSD, install the published binary directly:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | bash
+```
+
+Optional flags:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | \
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.1
+```
+
+The script:
+
+- detects the current OS and architecture
+- downloads the matching release archive and `.sha256`
+- verifies the checksum
+- installs `deco` into `~/.local/bin` by default
+
 ## Install from a release archive
 
 Linux, macOS, and FreeBSD example:
@@ -68,9 +90,12 @@ Expand-Archive deco-v1.0.0-alpha.1-x86_64-pc-windows-msvc.zip
 .\deco-v1.0.0-alpha.1-x86_64-pc-windows-msvc\deco.exe --version
 ```
 
+Windows users should download the `.zip` asset from the release page directly.
+
 ## Local quality gates
 
 ```sh
+bash -n scripts/install.sh
 make fmt
 make lint
 make test

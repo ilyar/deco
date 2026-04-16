@@ -43,6 +43,19 @@ deco --version
 deco --help
 ```
 
+Install the published Unix binary with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | bash
+```
+
+Pick a different directory or explicit tag if needed:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | \
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.1
+```
+
 Prebuilt binaries are published on GitHub Releases for:
 
 - Linux `x86_64`
@@ -63,6 +76,12 @@ cargo run -p deco -- --help
 ```
 
 More detail: [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1)
+
+## Dev Container
+
+The repository includes [.devcontainer/devcontainer.json](/home/ilyar/startup/deco/repo/deco/.devcontainer/devcontainer.json:1) for a reproducible development environment with Rust, Docker tooling, GitHub CLI, and release-packaging dependencies preinstalled.
+
+Use it if you want the same shell environment for development, validation, and Linux-side release preparation.
 
 ## Typical User Flow
 

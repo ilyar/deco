@@ -66,6 +66,7 @@ jobs:
         env:
           CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
         run: |
+          bash -n scripts/install.sh
           cargo fmt --check
           cargo clippy --workspace --all-targets -- -D warnings
           cargo test -q --workspace --exclude deco-cli
@@ -283,6 +284,12 @@ jobs:
           - \`deco-v${{ needs.prepare.outputs.version }}-aarch64-apple-darwin.tar.gz\`
           - \`deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz\`
           - one \`.sha256\` file per archive
+
+          Installer:
+
+          \`\`\`sh
+          curl -fsSL https://raw.githubusercontent.com/${{ github.repository }}/${GITHUB_REF_NAME}/scripts/install.sh | bash
+          \`\`\`
 
           Provenance:
 

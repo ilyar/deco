@@ -11,6 +11,16 @@ Author: ilyar
 - Linux or macOS shell environment
 - Docker if you want to validate runtime-oriented commands manually
 
+## Dev Container
+
+The repository includes [.devcontainer/devcontainer.json](/home/ilyar/startup/deco/repo/deco/.devcontainer/devcontainer.json:1) and [.devcontainer/Dockerfile](/home/ilyar/startup/deco/repo/deco/.devcontainer/Dockerfile:1).
+
+It is the intended reproducible environment for:
+
+- day-to-day Rust development
+- running `fmt`, `clippy`, `test`, and parity checks
+- preparing Linux-side release builds and GitHub release operations
+
 Run all commands from `repo/deco`.
 
 ## Local Development
@@ -27,6 +37,7 @@ cargo run -p deco -- --version
 The standard local gates are:
 
 ```sh
+bash -n scripts/install.sh
 make fmt
 make lint
 make test
@@ -49,6 +60,12 @@ Install from source:
 ```sh
 cargo install --path . --locked
 deco --version
+```
+
+Install the published Unix binary with:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | bash
 ```
 
 Build a local optimized binary:
@@ -82,6 +99,7 @@ Release workflow model:
 3. The workflow:
    - validates version, lint, tests, and parity gates
    - builds release binaries for Linux, Windows, macOS, and FreeBSD
+   - keeps `scripts/install.sh` available at the tagged raw GitHub URL for `curl | bash`
    - packages each binary with `README.md` and `LICENSE`
    - generates one `.sha256` file per archive
    - creates GitHub artifact attestations for supply-chain provenance

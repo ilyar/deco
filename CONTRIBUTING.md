@@ -10,6 +10,7 @@ Author: ilyar
 Run the required local checks from `repo/deco`:
 
 ```sh
+bash -n scripts/install.sh
 make fmt
 make lint
 make test
@@ -62,6 +63,8 @@ v1.0.0-alpha.1
 ```
 
 The tag-triggered workflow validates the release gates, builds the published binaries, publishes a GitHub Release, and generates artifact attestations for supply-chain provenance.
+
+Use the checked-in dev container when you want a reproducible contributor environment for Rust tooling, Docker CLI access, and Linux-side release preparation.
 
 Expected published targets for `v1.0.0-alpha.1`:
 

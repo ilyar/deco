@@ -29,6 +29,9 @@ jobs:
       - name: Check formatting
         run: cargo fmt --check
 
+      - name: Check installer script syntax
+        run: bash -n scripts/install.sh
+
       - name: Run clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
