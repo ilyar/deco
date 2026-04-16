@@ -13,7 +13,7 @@ Author: ilyar
 
 ## Dev Container
 
-The repository includes [.devcontainer/devcontainer.json](/home/ilyar/startup/deco/repo/deco/.devcontainer/devcontainer.json:1) and [.devcontainer/Dockerfile](/home/ilyar/startup/deco/repo/deco/.devcontainer/Dockerfile:1).
+The repository includes [.devcontainer/devcontainer.json](./.devcontainer/devcontainer.json) and [.devcontainer/Dockerfile](./.devcontainer/Dockerfile).
 
 It is the intended reproducible environment for:
 
@@ -32,7 +32,7 @@ cargo run -p deco -- --help
 cargo run -p deco -- --version
 ```
 
-The preferred task runner is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1).
+The preferred task runner is [Justfile](./Justfile).
 
 Typical commands:
 

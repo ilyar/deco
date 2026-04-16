@@ -98,8 +98,8 @@ Windows users should download the `.zip` asset from the release page directly.
 just ci
 ```
 
-The maintained developer guide lives in [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1).
-The contribution workflow lives in [CONTRIBUTING.md](/home/ilyar/startup/deco/repo/deco/CONTRIBUTING.md:1).
+The maintained developer guide lives in [DEVELOP.md](../DEVELOP.md).
+The contribution workflow lives in [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ## Local release build
 

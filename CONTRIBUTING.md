@@ -62,7 +62,7 @@ The tag-triggered workflow validates the release gates, builds the published bin
 
 Use the checked-in dev container when you want a reproducible contributor environment for Rust tooling, Docker CLI access, and Linux-side release preparation.
 
-The canonical local task entrypoint is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1). Prefer `just` over ad hoc command sequences.
+The canonical local task entrypoint is [Justfile](./Justfile). Prefer `just` over ad hoc command sequences.
 
 Expected published targets for `v1.0.0-alpha.2`:
 
@@ -75,4 +75,4 @@ Expected published targets for `v1.0.0-alpha.2`:
 
 ## License
 
-By contributing, you agree that your changes will be distributed under the MIT License in [LICENSE](/home/ilyar/startup/deco/repo/deco/LICENSE:1).
+By contributing, you agree that your changes will be distributed under the MIT License in [LICENSE](./LICENSE).

@@ -75,17 +75,17 @@ For local development without install:
 cargo run -p deco -- --help
 ```
 
-More detail: [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1)
+More detail: [DEVELOP.md](./DEVELOP.md)
 
 ## Dev Container
 
-The repository includes [.devcontainer/devcontainer.json](/home/ilyar/startup/deco/repo/deco/.devcontainer/devcontainer.json:1) for a reproducible development environment with Rust, Docker tooling, GitHub CLI, and release-packaging dependencies preinstalled.
+The repository includes [.devcontainer/devcontainer.json](./.devcontainer/devcontainer.json) for a reproducible development environment with Rust, Docker tooling, GitHub CLI, and release-packaging dependencies preinstalled.
 
 Use it if you want the same shell environment for development, validation, and Linux-side release preparation.
 
 ## Development Commands
 
-The primary local task runner is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1).
+The primary local task runner is [Justfile](./Justfile).
 
 Common commands:
 
@@ -265,10 +265,10 @@ That means scripting should usually redirect `stdout`, for example:
 deco read-configuration --workspace-folder /path/to/my-app > result.json
 ```
 
-More detail: [docs/stderr-convention.md](/home/ilyar/startup/deco/repo/deco/docs/stderr-convention.md:1)
+More detail: [docs/stderr-convention.md](./docs/stderr-convention.md)
 
 ## More Documentation
 
-- [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1) for building, testing, releasing, and verifying artifacts
-- [CONTRIBUTING.md](/home/ilyar/startup/deco/repo/deco/CONTRIBUTING.md:1) for contribution workflow and review expectations
-- [docs/installing.md](/home/ilyar/startup/deco/repo/deco/docs/installing.md:1) for release downloads, install commands, and local release commands
+- [DEVELOP.md](./DEVELOP.md) for building, testing, releasing, and verifying artifacts
+- [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution workflow and review expectations
+- [docs/installing.md](./docs/installing.md) for release downloads, install commands, and local release commands
