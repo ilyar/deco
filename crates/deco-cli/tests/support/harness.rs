@@ -24,6 +24,9 @@ pub struct RunnerSpec {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct CapturedRun {
+    pub binary: String,
+    pub args: Vec<String>,
+    pub cwd: String,
     pub exit_code: i32,
     pub stdout: String,
     pub stderr: String,
@@ -174,6 +177,9 @@ impl ParityHarness {
             .map_err(|error| format!("failed to execute `{}`: {error}", spec.binary.display()))?;
 
         Ok(CapturedRun {
+            binary: spec.binary.display().to_string(),
+            args: spec.args.clone(),
+            cwd: env!("CARGO_MANIFEST_DIR").to_string(),
             exit_code: output.status.code().unwrap_or(-1),
             stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
             stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
@@ -194,7 +200,7 @@ impl ParityHarness {
             return Err(ParityDiff {
                 fixture_id: fixture.id.clone(),
                 expected: format!("exit code {}", fixture.expected.exit_code),
-                actual: format!("exit code {}", deco_run.exit_code),
+                actual: format_run_mismatch(&deco_run),
             });
         }
 
@@ -203,7 +209,7 @@ impl ParityHarness {
                 return Err(ParityDiff {
                     fixture_id: fixture.id.clone(),
                     expected: format!("stdout to contain `{needle}`"),
-                    actual: deco_run.stdout,
+                    actual: format_run_mismatch(&deco_run),
                 });
             }
         }
@@ -213,7 +219,7 @@ impl ParityHarness {
                 return Err(ParityDiff {
                     fixture_id: fixture.id.clone(),
                     expected: format!("stderr to contain `{needle}`"),
-                    actual: deco_run.stderr,
+                    actual: format_run_mismatch(&deco_run),
                 });
             }
         }
@@ -228,7 +234,7 @@ impl ParityHarness {
                 return Err(ParityDiff {
                     fixture_id: fixture.id.clone(),
                     expected: format!("upstream exit code {}", upstream_run.exit_code),
-                    actual: format!("deco exit code {}", deco_run.exit_code),
+                    actual: format_run_mismatch(&deco_run),
                 });
             }
 
@@ -247,7 +253,10 @@ impl ParityHarness {
                             expected: format!(
                                 "JSON field `{key}` to match upstream `{upstream_value}`"
                             ),
-                            actual: format!("deco `{key}` was `{deco_value}`"),
+                            actual: format!(
+                                "deco `{key}` was `{deco_value}`\n{}",
+                                format_run_mismatch(&deco_run)
+                            ),
                         });
                     }
                 }
@@ -258,7 +267,7 @@ impl ParityHarness {
                     return Err(ParityDiff {
                         fixture_id: fixture.id.clone(),
                         expected: format!("deco stdout to preserve upstream marker `{needle}`"),
-                        actual: deco_run.stdout,
+                        actual: format_run_mismatch(&deco_run),
                     });
                 }
             }
@@ -297,4 +306,11 @@ fn absolutize_fixture_path(path: &Path) -> PathBuf {
     }
 
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path)
+}
+
+fn format_run_mismatch(run: &CapturedRun) -> String {
+    format!(
+        "binary: {}\nargs: {:?}\ncwd: {}\nexit code: {}\nstdout:\n{}\nstderr:\n{}",
+        run.binary, run.args, run.cwd, run.exit_code, run.stdout, run.stderr
+    )
 }
