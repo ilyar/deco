@@ -1,0 +1,15 @@
+[package]
+name = "deco-features"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+deco-config = { path = "../deco-config" }
+deco-core-model = { path = "../deco-core-model" }
+deco-lockfile = { path = "../deco-lockfile" }
+serde.workspace = true
+serde_json.workspace = true
+
+[dev-dependencies]
+tempfile = "3.20.0"

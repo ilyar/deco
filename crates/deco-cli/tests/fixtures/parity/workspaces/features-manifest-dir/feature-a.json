@@ -1,0 +1,5 @@
+{
+  "id": "feature-a",
+  "name": "Feature A",
+  "dependsOn": ["feature-b"]
+}

@@ -1,0 +1,283 @@
+{
+  "fixtures": [
+    {
+      "id": "read-configuration-image",
+      "description": "Baseline image-based read-configuration parity fixture.",
+      "workspace": "tests/fixtures/parity/workspaces/read-configuration-image",
+      "command": [
+        "read-configuration"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"read-configuration\"",
+          "\"kind\": \"image\"",
+          "\"image\": \"alpine:3.20\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "read-configuration-compose",
+      "description": "Compose-based read-configuration parity fixture.",
+      "workspace": "tests/fixtures/parity/workspaces/read-configuration-compose",
+      "command": [
+        "read-configuration"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"read-configuration\"",
+          "\"kind\": \"compose\"",
+          "\"service\": \"app\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "read-configuration-merged",
+      "description": "Merged configuration flag should preserve the merged payload in output.",
+      "workspace": "tests/fixtures/parity/workspaces/read-configuration-merged",
+      "command": [
+        "read-configuration",
+        "--include-merged-configuration"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"merged_configuration\"",
+          "\"remoteUser\": \"vscode\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "read-configuration-missing",
+      "description": "Missing config should return a structured config error.",
+      "workspace": "tests/fixtures/parity/workspaces/read-configuration-missing",
+      "command": [
+        "read-configuration"
+      ],
+      "expected": {
+        "exit_code": 3,
+        "stdout_contains": [
+          "\"outcome\": \"error\"",
+          "\"category\": \"config\""
+        ],
+        "stderr_contains": [
+          "dev container config not found"
+        ],
+        "allow_upstream_exit_code_difference": true
+      }
+    },
+    {
+      "id": "features-manifest-dir",
+      "description": "Feature manifest inspection should emit local manifest summaries.",
+      "workspace": "tests/fixtures/parity/workspaces/features-manifest-dir",
+      "command": [
+        "features",
+        "--manifest-dir",
+        "tests/fixtures/parity/workspaces/features-manifest-dir"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"features\"",
+          "\"source\": \"manifest-directory\"",
+          "\"id\": \"feature-a\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "features-resolve-dependencies",
+      "description": "Feature dependency resolution should expose local graph hints.",
+      "workspace": "tests/fixtures/parity/workspaces/features-manifest-dir",
+      "command": [
+        "features",
+        "resolve-dependencies",
+        "--manifest-dir",
+        "tests/fixtures/parity/workspaces/features-manifest-dir"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"mode\": \"resolve-dependencies\"",
+          "\"roots\"",
+          "\"feature-b\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "features-resolve-dependencies-config-local",
+      "description": "Workspace-based local feature refs should resolve through .devcontainer/features like upstream.",
+      "workspace": "tests/fixtures/parity/workspaces/features-config-local",
+      "command": [
+        "features",
+        "resolve-dependencies",
+        "--workspace-folder",
+        "tests/fixtures/parity/workspaces/features-config-local"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"mode\": \"resolve-dependencies\"",
+          "\"feature-a\"",
+          "\"feature-b\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "features-test",
+      "description": "Feature test should report local fixture validation summary.",
+      "workspace": "tests/fixtures/parity/workspaces/features-test",
+      "command": [
+        "features",
+        "test",
+        "--manifest-dir",
+        "tests/fixtures/parity/workspaces/features-test"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"mode\": \"test\"",
+          "\"failed\": 1"
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "templates-metadata",
+      "description": "Template metadata should scan a local manifest file.",
+      "workspace": "tests/fixtures/parity/workspaces/templates-sample",
+      "command": [
+        "templates",
+        "metadata",
+        "--manifest-path",
+        "tests/fixtures/parity/workspaces/templates-sample/template.json"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"templates\"",
+          "\"mode\": \"metadata\"",
+          "\"sample-template\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "templates-apply",
+      "description": "Template apply should materialize the local template tree.",
+      "workspace": "tests/fixtures/parity/workspaces/templates-sample",
+      "command": [
+        "templates",
+        "apply",
+        "--manifest-path",
+        "tests/fixtures/parity/workspaces/templates-sample/template.json",
+        "--target-dir",
+        "tests/fixtures/parity/workspaces/templates-sample-output"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"mode\": \"apply\"",
+          "\"files_copied\": 2"
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "outdated-lockfile",
+      "description": "Outdated should summarize a local lockfile.",
+      "workspace": "tests/fixtures/parity/workspaces/lockfile-sample",
+      "command": [
+        "outdated",
+        "--lockfile",
+        "tests/fixtures/parity/workspaces/lockfile-sample/deco-lock.json"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"outdated\"",
+          "\"upgrade_needed\": false",
+          "\"target_count\": 1"
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "upgrade-lockfile-dry-run",
+      "description": "Upgrade dry-run should report lockfile normalization without writing.",
+      "workspace": "tests/fixtures/parity/workspaces/lockfile-upgrade",
+      "command": [
+        "upgrade",
+        "--lockfile",
+        "tests/fixtures/parity/workspaces/lockfile-upgrade/deco-lock.json",
+        "--dry-run"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"upgrade\"",
+          "\"dry_run\": true",
+          "\"written\": false"
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "outdated-feature-lockfile",
+      "description": "Outdated should summarize an upstream-style feature lockfile from workspace config.",
+      "workspace": "tests/fixtures/parity/workspaces/lockfile-feature",
+      "command": [
+        "outdated"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"outdated\"",
+          "\"format\": \"devcontainer-feature\"",
+          "\"feature_count\": 1",
+          "\"feature-a\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "upgrade-feature-lockfile-dry-run",
+      "description": "Upgrade dry-run should synthesize a feature lockfile from workspace config.",
+      "workspace": "tests/fixtures/parity/workspaces/lockfile-feature",
+      "command": [
+        "upgrade",
+        "--dry-run"
+      ],
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"upgrade\"",
+          "\"format\": \"devcontainer-feature\"",
+          "\"written\": false",
+          "\"feature_count\": 1",
+          "\"version\": \"2.0.0\""
+        ],
+        "stderr_contains": []
+      }
+    }
+  ]
+}

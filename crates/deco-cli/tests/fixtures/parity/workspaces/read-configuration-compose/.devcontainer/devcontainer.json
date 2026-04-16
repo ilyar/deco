@@ -1,0 +1,5 @@
+{
+  "name": "parity-read-configuration-compose",
+  "dockerComposeFile": "compose.yml",
+  "service": "app"
+}

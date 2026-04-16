@@ -1,0 +1,6 @@
+{
+  "id": "sample-template",
+  "name": "Sample Template",
+  "version": "1.0.0",
+  "source_dir": "./template"
+}

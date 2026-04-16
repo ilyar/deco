@@ -1,0 +1,8 @@
+{
+  "schema_version": 0,
+  "source": {
+    "workspace_folder": "/workspace",
+    "config_file": "/workspace/.devcontainer/devcontainer.json"
+  },
+  "targets": []
+}

@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cmd="${1:-}"
+shift || true
+
+case "$cmd" in
+  ps)
+    exit 0
+    ;;
+  inspect)
+    cat <<'EOF'
+[{
+  "Id": "sha256:fake-image",
+  "Architecture": "amd64",
+  "Os": "linux",
+  "Config": {
+    "Env": [],
+    "Labels": {}
+  },
+  "ContainerConfig": {
+    "Env": [],
+    "Labels": {}
+  }
+}]
+EOF
+    exit 0
+    ;;
+  compose)
+    sub="${1:-}"
+    shift || true
+    case "$sub" in
+      ps)
+        echo "[]"
+        exit 0
+        ;;
+      *)
+        echo "fake-docker: unsupported docker compose subcommand: $sub" >&2
+        exit 1
+        ;;
+    esac
+    ;;
+  *)
+    echo "fake-docker: unsupported docker subcommand: $cmd" >&2
+    exit 1
+    ;;
+esac

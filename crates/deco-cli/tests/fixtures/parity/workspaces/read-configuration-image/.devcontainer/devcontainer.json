@@ -1,0 +1,4 @@
+{
+  "name": "parity-read-configuration-image",
+  "image": "alpine:3.20"
+}

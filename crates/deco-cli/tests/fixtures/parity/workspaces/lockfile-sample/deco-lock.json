@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "source": {
+    "workspace_folder": "/workspace",
+    "config_file": "/workspace/.devcontainer/devcontainer.json"
+  },
+  "targets": [
+    {
+      "name": "base",
+      "kind": "image",
+      "reference": "alpine:3.20"
+    }
+  ]
+}

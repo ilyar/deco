@@ -1,0 +1,10 @@
+{
+  "image": "alpine:3.20",
+  "features": {
+    "./features/feature-a": {
+      "dependsOn": [
+        "feature-b"
+      ]
+    }
+  }
+}
