@@ -30,16 +30,7 @@ jobs:
         run: |
           set -euo pipefail
           expected_version="${GITHUB_REF_NAME#v}"
-          actual_version="$(
-            python3 - <<'PY'
-            import pathlib
-            import tomllib
-
-            cargo = pathlib.Path("Cargo.toml")
-            data = tomllib.loads(cargo.read_text(encoding="utf-8"))
-            print(data["workspace"]["package"]["version"])
-            PY
-          )"
+          actual_version="$(python3 -c 'import pathlib, tomllib; print(tomllib.loads(pathlib.Path("Cargo.toml").read_text(encoding="utf-8"))["workspace"]["package"]["version"])')"
           if [[ "$actual_version" != "$expected_version" ]]; then
             echo "tag version $expected_version does not match workspace version $actual_version" >&2
             exit 1
