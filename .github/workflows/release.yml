@@ -41,7 +41,12 @@ jobs:
             exit 1
           fi
 
+      - name: Build root binary for integration tests
+        run: cargo build -q -p deco
+
       - name: Run release quality gates
+        env:
+          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
         run: |
           cargo fmt --check
           cargo clippy --workspace --all-targets -- -D warnings

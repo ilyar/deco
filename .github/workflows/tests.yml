@@ -32,8 +32,15 @@ jobs:
       - name: Run clippy
         run: cargo clippy --workspace --all-targets -- -D warnings
 
+      - name: Build root binary for integration tests
+        run: cargo build -q -p deco
+
       - name: Run workspace tests
+        env:
+          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
         run: cargo test -q
 
       - name: Run local parity harness
+        env:
+          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
         run: cargo test -q -p deco-cli --test parity_harness
