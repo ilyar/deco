@@ -22,9 +22,6 @@ fn resolve_local_deco_binary() -> PathBuf {
         .expect("deco-cli should live under <workspace>/crates/deco-cli")
         .to_path_buf();
     let candidate = workspace_root.join("target").join("debug").join("deco");
-    if candidate.exists() {
-        return candidate;
-    }
 
     let status = StdCommand::new("cargo")
         .arg("build")
