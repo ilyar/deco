@@ -32,16 +32,28 @@ cargo run -p deco -- --help
 cargo run -p deco -- --version
 ```
 
+The preferred task runner is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1).
+
+Typical commands:
+
+```sh
+just ci
+just build-release
+just verify-self-devcontainer
+just deco-read
+just deco-build
+just deco-up
+just deco-exec pwd
+```
+
+`Makefile` is kept only as a thin compatibility wrapper around `just`.
+
 ## Quality Gates
 
 The standard local gates are:
 
 ```sh
-bash -n scripts/install.sh
-make fmt
-make lint
-make test
-make parity
+just ci
 ```
 
 Equivalent raw commands:
@@ -65,13 +77,13 @@ deco --version
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | bash
 ```
 
 Build a local optimized binary:
 
 ```sh
-make build-release
+just build-release
 ls -l target/release/deco
 ```
 
@@ -86,18 +98,18 @@ scripts/package-unix.sh \
 
 ## Release Process
 
-The first public pre-release target is:
+The current public pre-release target is:
 
 ```text
-v1.0.0-alpha.1
+v1.0.0-alpha.2
 ```
 
 Release workflow model:
 
-1. Push a semantic version tag such as `v1.0.0-alpha.1`.
+1. Push a semantic version tag such as `v1.0.0-alpha.2`.
 2. GitHub Actions runs the release workflow.
 3. The workflow:
-   - validates version, lint, tests, and parity gates
+   - validates version, lint, tests, parity gates, and the checked-in `.devcontainer` through `just ci`
    - builds release binaries for Linux, Windows, macOS, and FreeBSD
    - keeps `scripts/install.sh` available at the tagged raw GitHub URL for `curl | bash`
    - packages each binary with `README.md` and `LICENSE`
@@ -105,7 +117,7 @@ Release workflow model:
    - creates GitHub artifact attestations for supply-chain provenance
    - creates a GitHub Release and uploads the assets
 
-Published targets for `v1.0.0-alpha.1`:
+Published targets for `v1.0.0-alpha.2`:
 
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-musl`
@@ -117,8 +129,8 @@ Published targets for `v1.0.0-alpha.1`:
 Create and push the tag:
 
 ```sh
-git tag v1.0.0-alpha.1
-git push origin v1.0.0-alpha.1
+git tag v1.0.0-alpha.2
+git push origin v1.0.0-alpha.2
 ```
 
 ## Verifying Release Provenance

@@ -35,7 +35,7 @@ resolver = "2"
 edition = "2024"
 authors = ["ilyar"]
 license = "MIT"
-version = "1.0.0-alpha.1"
+version = "1.0.0-alpha.2"
 
 [workspace.dependencies]
 clap = { version = "4.5.39", features = ["derive"] }

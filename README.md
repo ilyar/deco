@@ -17,7 +17,7 @@ Use `deco` if you want to:
 
 ## Current Status
 
-`deco` is being prepared for the first public alpha release: `v1.0.0-alpha.1`.
+`deco` is being prepared for the current public alpha release: `v1.0.0-alpha.2`.
 
 What is already covered:
 
@@ -46,14 +46,14 @@ deco --help
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | bash
 ```
 
 Pick a different directory or explicit tag if needed:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.1/scripts/install.sh | \
-  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.1
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | \
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.2
 ```
 
 Prebuilt binaries are published on GitHub Releases for:
@@ -67,7 +67,7 @@ Prebuilt binaries are published on GitHub Releases for:
 
 Download the asset that matches your platform from:
 
-- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.1`
+- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.2`
 
 For local development without install:
 
@@ -82,6 +82,23 @@ More detail: [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1)
 The repository includes [.devcontainer/devcontainer.json](/home/ilyar/startup/deco/repo/deco/.devcontainer/devcontainer.json:1) for a reproducible development environment with Rust, Docker tooling, GitHub CLI, and release-packaging dependencies preinstalled.
 
 Use it if you want the same shell environment for development, validation, and Linux-side release preparation.
+
+## Development Commands
+
+The primary local task runner is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1).
+
+Common commands:
+
+```sh
+just ci
+just build-release
+just deco-read
+just deco-build
+just deco-up
+just deco-exec pwd
+```
+
+`Makefile` remains as a compatibility wrapper, but new development and CI flow should use `just`.
 
 ## Typical User Flow
 

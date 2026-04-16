@@ -49,6 +49,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: taiki-e/install-action@just
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -59,20 +62,8 @@ jobs:
         with:
           workspaces: . -> target
 
-      - name: Build root binary for integration tests
-        run: cargo build -q -p deco
-
       - name: Run release quality gates
-        env:
-          CARGO_BIN_EXE_deco: ${{ github.workspace }}/target/debug/deco
-        run: |
-          bash -n scripts/install.sh
-          cargo fmt --check
-          cargo clippy --workspace --all-targets -- -D warnings
-          cargo test -q --workspace --exclude deco-cli
-          cargo test -q -p deco-cli --lib
-          cargo test -q -p deco-cli --test cli_smoke
-          cargo test -q -p deco-cli --test parity_harness
+        run: just ci
 
   build-native:
     needs: [prepare, verify]
@@ -101,6 +92,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: taiki-e/install-action@just
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -112,28 +106,15 @@ jobs:
           workspaces: . -> target
 
       - name: Build release binary
-        run: cargo build --release --locked -p deco --target ${{ matrix.target }}
+        run: just build-release-target ${{ matrix.target }}
 
       - name: Package Unix release asset
         if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          chmod +x scripts/package-unix.sh
-          scripts/package-unix.sh \
-            "${{ needs.prepare.outputs.version }}" \
-            "${{ matrix.target }}" \
-            "${{ matrix.binary_path }}" \
-            dist
+        run: just package-unix ${{ needs.prepare.outputs.version }} ${{ matrix.target }} ${{ matrix.binary_path }} dist
 
       - name: Package Windows release asset
         if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          ./scripts/package-windows.ps1 `
-            -Version "${{ needs.prepare.outputs.version }}" `
-            -Target "${{ matrix.target }}" `
-            -BinaryPath "${{ matrix.binary_path }}" `
-            -OutputDir "dist"
+        run: just package-windows ${{ needs.prepare.outputs.version }} ${{ matrix.target }} ${{ matrix.binary_path }} dist
 
       - name: Generate provenance attestation for archive
         uses: actions/attest@v4
@@ -160,6 +141,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Install just
+        uses: taiki-e/install-action@just
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -177,14 +161,7 @@ jobs:
         run: cross build --release --locked -p deco --target aarch64-unknown-linux-musl
 
       - name: Package Linux ARM64 release asset
-        shell: bash
-        run: |
-          chmod +x scripts/package-unix.sh
-          scripts/package-unix.sh \
-            "${{ needs.prepare.outputs.version }}" \
-            "aarch64-unknown-linux-musl" \
-            "target/aarch64-unknown-linux-musl/release/deco" \
-            dist
+        run: just package-unix ${{ needs.prepare.outputs.version }} aarch64-unknown-linux-musl target/aarch64-unknown-linux-musl/release/deco dist
 
       - name: Generate provenance attestation for archive
         uses: actions/attest@v4
@@ -222,12 +199,9 @@ jobs:
             pkg install -y bash curl
             curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
             . "$HOME/.cargo/env"
-            cargo build --release --locked -p deco
-            bash scripts/package-unix.sh \
-              "${{ needs.prepare.outputs.version }}" \
-              "x86_64-unknown-freebsd" \
-              "target/release/deco" \
-              "dist"
+            cargo install just --locked
+            just build-release
+            just package-unix "${{ needs.prepare.outputs.version }}" "x86_64-unknown-freebsd" "target/release/deco" "dist"
 
       - name: Generate provenance attestation for archive
         uses: actions/attest@v4

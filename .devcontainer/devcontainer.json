@@ -17,7 +17,7 @@
   },
   "remoteUser": "vscode",
   "workspaceFolder": "/workspaces/deco",
-  "postCreateCommand": "rustup component add clippy rustfmt && cargo install cross --locked",
+  "postCreateCommand": "rustup component add clippy rustfmt && cargo install just cross --locked",
   "customizations": {
     "vscode": {
       "settings": {

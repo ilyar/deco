@@ -10,11 +10,7 @@ Author: ilyar
 Run the required local checks from `repo/deco`:
 
 ```sh
-bash -n scripts/install.sh
-make fmt
-make lint
-make test
-make parity
+just ci
 ```
 
 Equivalent raw commands:
@@ -59,14 +55,16 @@ deco run-user-commands --workspace-folder /path/to/workspace
 Releases are produced from Git tags such as:
 
 ```text
-v1.0.0-alpha.1
+v1.0.0-alpha.2
 ```
 
 The tag-triggered workflow validates the release gates, builds the published binaries, publishes a GitHub Release, and generates artifact attestations for supply-chain provenance.
 
 Use the checked-in dev container when you want a reproducible contributor environment for Rust tooling, Docker CLI access, and Linux-side release preparation.
 
-Expected published targets for `v1.0.0-alpha.1`:
+The canonical local task entrypoint is [Justfile](/home/ilyar/startup/deco/repo/deco/Justfile:1). Prefer `just` over ad hoc command sequences.
+
+Expected published targets for `v1.0.0-alpha.2`:
 
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-musl`

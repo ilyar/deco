@@ -1,19 +1,25 @@
-.PHONY: fmt lint test parity install build-release
+.PHONY: fmt lint test parity install build-release ci verify-self-devcontainer
 
 fmt:
-	cargo fmt --check
+	just fmt
 
 lint:
-	cargo clippy --workspace --all-targets -- -D warnings
+	just lint
 
 test:
-	cargo test -q
+	just test
 
 parity:
-	cargo test -q -p deco-cli --test parity_harness
+	just parity
 
 install:
-	cargo install --path . --locked
+	just install
 
 build-release:
-	cargo build --release
+	just build-release
+
+ci:
+	just ci
+
+verify-self-devcontainer:
+	just verify-self-devcontainer
