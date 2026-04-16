@@ -76,6 +76,7 @@ impl ParityHarness {
     ) -> RunnerSpec {
         let mut args = prefix_args;
         args.extend(fixture.command.clone());
+        absolutize_fixture_args(&mut args);
         let should_inject_workspace = args
             .iter()
             .find(|arg| !arg.starts_with('-') && !arg.ends_with(".js"))
@@ -94,7 +95,7 @@ impl ParityHarness {
             });
         if should_inject_workspace && !args.iter().any(|arg| arg == "--workspace-folder") {
             args.push("--workspace-folder".to_string());
-            args.push(fixture.workspace.display().to_string());
+            args.push(absolutize_fixture_path(&fixture.workspace).display().to_string());
         }
         self.build_runner(binary, args)
     }
@@ -265,4 +266,35 @@ impl ParityHarness {
 
         Ok(())
     }
+}
+
+fn absolutize_fixture_args(args: &mut [String]) {
+    let path_flags = [
+        "--workspace-folder",
+        "--config",
+        "--manifest-dir",
+        "--manifest-path",
+        "--target-dir",
+        "--lockfile",
+        "--project-folder",
+    ];
+
+    let mut index = 0;
+    while index + 1 < args.len() {
+        if path_flags.contains(&args[index].as_str()) {
+            let path = PathBuf::from(&args[index + 1]);
+            args[index + 1] = absolutize_fixture_path(&path).display().to_string();
+            index += 2;
+            continue;
+        }
+        index += 1;
+    }
+}
+
+fn absolutize_fixture_path(path: &Path) -> PathBuf {
+    if path.is_absolute() {
+        return path.to_path_buf();
+    }
+
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join(path)
 }
