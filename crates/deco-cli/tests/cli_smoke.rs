@@ -487,6 +487,114 @@ fn templates_metadata_scans_manifest_directory() {
 }
 
 #[test]
+fn templates_metadata_resolves_logical_template_id_from_collection() {
+    let temp = tempdir().expect("tempdir should be created");
+    fs::create_dir_all(temp.path().join("alpha")).expect("alpha dir should exist");
+    fs::create_dir_all(temp.path().join("beta")).expect("beta dir should exist");
+    fs::write(
+        temp.path().join("alpha.json"),
+        r#"{
+          "id": "alpha",
+          "source_dir": "./alpha"
+        }"#,
+    )
+    .expect("manifest should be written");
+    fs::write(
+        temp.path().join("beta.json"),
+        r#"{
+          "id": "beta",
+          "name": "Beta Template",
+          "source_dir": "./beta"
+        }"#,
+    )
+    .expect("manifest should be written");
+
+    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    command
+        .arg("templates")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(temp.path())
+        .arg("--template-id")
+        .arg("beta");
+
+    command
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("\"scan_mode\": \"file\""))
+        .stdout(predicates::str::contains("\"beta\""))
+        .stdout(predicates::str::contains("\"Beta Template\""))
+        .stdout(predicates::str::contains("\"manifests\""));
+}
+
+#[test]
+fn templates_metadata_reports_missing_logical_template_id() {
+    let temp = tempdir().expect("tempdir should be created");
+    fs::create_dir_all(temp.path().join("alpha")).expect("alpha dir should exist");
+    fs::write(
+        temp.path().join("alpha.json"),
+        r#"{
+          "id": "alpha",
+          "source_dir": "./alpha"
+        }"#,
+    )
+    .expect("manifest should be written");
+
+    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    command
+        .arg("templates")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(temp.path())
+        .arg("--template-id")
+        .arg("missing");
+
+    command
+        .assert()
+        .code(3)
+        .stdout(predicates::str::contains("\"category\": \"config\""))
+        .stderr(predicates::str::contains("template id `missing` was not found"));
+}
+
+#[test]
+fn templates_metadata_reports_duplicate_logical_template_id() {
+    let temp = tempdir().expect("tempdir should be created");
+    fs::create_dir_all(temp.path().join("one")).expect("dir should exist");
+    fs::create_dir_all(temp.path().join("two")).expect("dir should exist");
+    fs::write(
+        temp.path().join("one.json"),
+        r#"{
+          "id": "sample",
+          "source_dir": "./one"
+        }"#,
+    )
+    .expect("manifest should be written");
+    fs::write(
+        temp.path().join("two.json"),
+        r#"{
+          "id": "sample",
+          "source_dir": "./two"
+        }"#,
+    )
+    .expect("manifest should be written");
+
+    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    command
+        .arg("templates")
+        .arg("metadata")
+        .arg("--manifest-path")
+        .arg(temp.path())
+        .arg("--template-id")
+        .arg("sample");
+
+    command
+        .assert()
+        .code(3)
+        .stdout(predicates::str::contains("\"category\": \"config\""))
+        .stderr(predicates::str::contains("template id `sample` is duplicated"));
+}
+
+#[test]
 fn templates_apply_copies_files() {
     let temp = tempdir().expect("tempdir should be created");
     let template_dir = temp.path().join("template");
@@ -517,6 +625,62 @@ fn templates_apply_copies_files() {
         .assert()
         .success()
         .stdout(predicates::str::contains("\"command\": \"templates\""))
+        .stdout(predicates::str::contains("\"mode\": \"apply\""))
+        .stdout(predicates::str::contains("\"files_copied\": 2"));
+
+    assert_eq!(
+        fs::read_to_string(target_dir.join("hello.txt")).expect("target file should exist"),
+        "hello"
+    );
+    assert_eq!(
+        fs::read_to_string(target_dir.join("nested").join("world.txt"))
+            .expect("target file should exist"),
+        "world"
+    );
+}
+
+#[test]
+fn templates_apply_resolves_logical_template_id_from_collection() {
+    let temp = tempdir().expect("tempdir should be created");
+    let alpha_dir = temp.path().join("alpha");
+    let beta_source = temp.path().join("beta").join("src");
+    let target_dir = temp.path().join("target");
+    fs::create_dir_all(&alpha_dir).expect("alpha dir should exist");
+    fs::create_dir_all(beta_source.join("nested")).expect("beta dir should exist");
+    fs::write(beta_source.join("hello.txt"), "hello").expect("template file should be written");
+    fs::write(beta_source.join("nested").join("world.txt"), "world")
+        .expect("template file should be written");
+    fs::write(
+        temp.path().join("alpha.json"),
+        r#"{
+          "id": "alpha",
+          "source_dir": "./alpha"
+        }"#,
+    )
+    .expect("manifest should be written");
+    fs::write(
+        temp.path().join("beta.json"),
+        r#"{
+          "id": "beta",
+          "source_dir": "./beta/src"
+        }"#,
+    )
+    .expect("manifest should be written");
+
+    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    command
+        .arg("templates")
+        .arg("apply")
+        .arg("--manifest-path")
+        .arg(temp.path())
+        .arg("--template-id")
+        .arg("beta")
+        .arg("--target-dir")
+        .arg(&target_dir);
+
+    command
+        .assert()
+        .success()
         .stdout(predicates::str::contains("\"mode\": \"apply\""))
         .stdout(predicates::str::contains("\"files_copied\": 2"));
 

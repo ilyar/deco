@@ -1,7 +1,7 @@
 {
   "id": "feature-a",
   "version": "2.0.0",
-  "dependsOn": [
-    "feature-b"
-  ]
+  "dependsOn": {
+    "./features/feature-b": {}
+  }
 }

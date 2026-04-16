@@ -14,6 +14,8 @@ pub struct ParityFixture {
     pub description: String,
     pub workspace: PathBuf,
     pub command: Vec<String>,
+    #[serde(default = "default_compare_with_upstream")]
+    pub compare_with_upstream: bool,
     pub expected: ParityExpectation,
 }
 
@@ -34,4 +36,8 @@ impl ParityManifest {
         serde_json::from_str(&raw)
             .map_err(|error| format!("failed to parse manifest {}: {error}", path.display()))
     }
+}
+
+const fn default_compare_with_upstream() -> bool {
+    true
 }

@@ -1,12 +1,3 @@
 {
-  "features": {
-    "feature-a": {
-      "version": "2.0.0",
-      "resolved": "./features/feature-a",
-      "integrity": "unresolved",
-      "dependsOn": [
-        "feature-b"
-      ]
-    }
-  }
+  "features": {}
 }

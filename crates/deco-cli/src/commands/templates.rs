@@ -4,6 +4,7 @@ use std::path::{Path, PathBuf};
 use deco_core_model::{DecoError, ErrorCategory};
 use deco_templates::{
     TemplateApplyResult, TemplatesMetadataResult, apply_template, inspect_template_manifest_path,
+    resolve_template_manifest_by_id, select_single_manifest_path,
 };
 
 use crate::cli::{TemplatesApplyArgs, TemplatesArgs, TemplatesCommand, TemplatesMetadataArgs};
@@ -42,7 +43,7 @@ pub fn run_apply(args: TemplatesApplyArgs) -> Result<TemplateApplyResult, DecoEr
         args.template_id,
         "template apply",
     )?;
-    let manifest_path = resolve_template_manifest_path(&manifest_path)?;
+    let manifest_path = select_single_manifest_path(&manifest_path)?;
     let target_dir = resolve_target_dir(&current_dir, args.workspace_folder, args.target_dir)?;
     apply_template(&manifest_path, &target_dir)
 }
@@ -64,42 +65,30 @@ fn resolve_template_input_path(
     template_id: Option<PathBuf>,
     command_name: &str,
 ) -> Result<PathBuf, DecoError> {
-    let raw_path = template_id.or(manifest_path).ok_or_else(|| {
+    let manifest_path = manifest_path.map(|path| absolutize(current_dir, path));
+    if let Some(template_id) = template_id {
+        let template_path = absolutize(current_dir, template_id.clone());
+        if template_path.exists() {
+            return Ok(template_path);
+        }
+
+        let collection_dir = manifest_path.ok_or_else(|| {
+            DecoError::new(
+                ErrorCategory::Config,
+                format!(
+                    "{command_name} requires `--manifest-path <collection-dir>` when `--template-id` is a logical id"
+                ),
+            )
+        })?;
+        return resolve_template_manifest_by_id(&collection_dir, &template_id.to_string_lossy());
+    }
+
+    manifest_path.ok_or_else(|| {
         DecoError::new(
             ErrorCategory::Config,
             format!("{command_name} requires `--template-id` or `--manifest-path`"),
         )
-    })?;
-    Ok(absolutize(current_dir, raw_path))
-}
-
-fn resolve_template_manifest_path(path: &Path) -> Result<PathBuf, DecoError> {
-    if path.is_file() {
-        return Ok(path.to_path_buf());
-    }
-
-    if !path.is_dir() {
-        return Err(DecoError::new(
-            ErrorCategory::Config,
-            format!("template path `{}` does not exist", path.display()),
-        ));
-    }
-
-    let summary = inspect_template_manifest_path(path)?;
-    match summary.manifests.as_slice() {
-        [single] => Ok(PathBuf::from(&single.path)),
-        [] => Err(DecoError::new(
-            ErrorCategory::Config,
-            format!("template path `{}` does not contain a manifest", path.display()),
-        )),
-        _ => Err(DecoError::new(
-            ErrorCategory::Config,
-            format!(
-                "template path `{}` contains multiple manifests; pass a manifest file with `--manifest-path`",
-                path.display()
-            ),
-        )),
-    }
+    })
 }
 
 fn resolve_target_dir(
@@ -208,5 +197,64 @@ mod tests {
         assert_eq!(result.files_copied, 1);
         assert_eq!(result.target_dir, workspace_folder.display().to_string());
         assert!(workspace_folder.join("hello.txt").exists());
+    }
+
+    #[test]
+    fn metadata_resolves_template_id_from_collection() {
+        let temp = tempdir().expect("tempdir should be created");
+        let collection_dir = temp.path().join("collection");
+        let selected_source = collection_dir.join("selected").join("src");
+        let other_source = collection_dir.join("other").join("src");
+        fs::create_dir_all(&selected_source).expect("selected source should exist");
+        fs::create_dir_all(&other_source).expect("other source should exist");
+        fs::write(
+            collection_dir.join("selected.json"),
+            r#"{"id":"selected","name":"Selected","source_dir":"./selected/src"}"#,
+        )
+        .expect("selected manifest should be written");
+        fs::write(
+            collection_dir.join("other.json"),
+            r#"{"id":"other","name":"Other","source_dir":"./other/src"}"#,
+        )
+        .expect("other manifest should be written");
+
+        let result = run_metadata(TemplatesMetadataArgs {
+            manifest_path: Some(collection_dir),
+            template_id: Some(PathBuf::from("selected")),
+        })
+        .expect("metadata should resolve logical id");
+
+        assert_eq!(result.scan_mode, deco_templates::TemplatesScanMode::File);
+        assert_eq!(result.manifests.len(), 1);
+        assert_eq!(result.manifests[0].id.as_deref(), Some("selected"));
+    }
+
+    #[test]
+    fn apply_resolves_template_id_from_collection() {
+        let temp = tempdir().expect("tempdir should be created");
+        let collection_dir = temp.path().join("collection");
+        let selected_source = collection_dir.join("selected").join("src");
+        let workspace_folder = temp.path().join("workspace");
+        fs::create_dir_all(selected_source.join("nested")).expect("selected source should exist");
+        fs::write(selected_source.join("hello.txt"), "hello").expect("file should be written");
+        fs::write(selected_source.join("nested").join("world.txt"), "world")
+            .expect("file should be written");
+        fs::write(
+            collection_dir.join("selected.json"),
+            r#"{"id":"selected","source_dir":"./selected/src"}"#,
+        )
+        .expect("selected manifest should be written");
+
+        let result = run_apply(TemplatesApplyArgs {
+            manifest_path: Some(collection_dir),
+            template_id: Some(PathBuf::from("selected")),
+            workspace_folder: Some(workspace_folder.clone()),
+            target_dir: None,
+        })
+        .expect("apply should resolve logical id");
+
+        assert_eq!(result.files_copied, 2);
+        assert!(workspace_folder.join("hello.txt").exists());
+        assert!(workspace_folder.join("nested").join("world.txt").exists());
     }
 }

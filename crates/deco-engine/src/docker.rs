@@ -545,14 +545,14 @@ fn select_compose_entry<'a>(
         return None;
     }
 
-    if prefer_running {
-        if let Some(entry) = matching.iter().find(|entry| {
+    if prefer_running
+        && let Some(entry) = matching.iter().find(|entry| {
             let state = compose_string_field(entry, &["State", "state"]).unwrap_or_default();
             let status = compose_string_field(entry, &["Status", "status"]).unwrap_or_default();
             state.eq_ignore_ascii_case("running") || status.to_ascii_lowercase().contains("running")
-        }) {
-            return Some(*entry);
-        }
+        })
+    {
+        return Some(*entry);
     }
 
     matching.into_iter().next()

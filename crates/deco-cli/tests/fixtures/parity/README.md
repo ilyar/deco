@@ -12,4 +12,17 @@ Integration contract:
 - set `DECO_PARITY_UPDATE_SNAPSHOTS=1` only when updating expected parity snapshots.
 - keep fixture workspaces in this directory so scenarios stay self-contained.
 
-The current skeleton only validates manifest loading and fixture shape.
+Not every fixture in this directory is expected to compare with upstream.
+
+Current upstream-backed subset:
+- `read-configuration*`
+- `features-resolve-dependencies-config-local`
+- `outdated-feature-lockfile`
+- `upgrade-feature-lockfile-dry-run`
+
+Current local-only subset:
+- local template fixtures
+- local manifest-directory feature fixtures
+- legacy `--lockfile` fixtures
+
+Use the `compare_with_upstream` field in `manifest.example.json` to distinguish the two modes.

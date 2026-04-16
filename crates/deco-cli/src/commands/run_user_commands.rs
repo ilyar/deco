@@ -45,7 +45,7 @@ pub(crate) fn run_with_engine<R: CommandRunner>(
         false,
     )?;
     let hooks = hooks_from_config(&resolved.configuration);
-    let plan = LifecyclePlanner::default().plan(&hooks);
+    let plan = LifecyclePlanner.plan(&hooks);
 
     let container_id = match args.container_id {
         Some(container_id) => container_id,

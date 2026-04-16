@@ -123,7 +123,7 @@ pub fn discover_feature_manifests(
 
     let mut manifests = Vec::new();
     for path in collect_json_files(directory)? {
-        manifests.push(parse_feature_manifest_summary(&path)?);
+        manifests.push(parse_feature_manifest_summary(path)?);
     }
 
     manifests.sort_by(|left, right| left.path.cmp(&right.path));
@@ -202,7 +202,7 @@ pub fn test_feature_manifests(
     let mut failures: BTreeMap<String, Vec<String>> = BTreeMap::new();
     let mut manifests = Vec::new();
     for path in &manifest_paths {
-        match parse_feature_manifest_summary(&path) {
+        match parse_feature_manifest_summary(path) {
             Ok(manifest) => manifests.push(manifest),
             Err(error) => {
                 failures.entry(path.display().to_string()).or_default().push(error.to_string());
@@ -335,7 +335,8 @@ pub fn generate_feature_lockfile(
     let references = extract_feature_references_from_resolved_config(resolved)?;
     let mut features = BTreeMap::new();
     for reference in references {
-        let id = local_feature_manifest_id(&reference).unwrap_or_else(|| reference.reference.clone());
+        let id =
+            local_feature_manifest_id(&reference).unwrap_or_else(|| reference.reference.clone());
         let version = local_feature_manifest_version(&reference)
             .or_else(|| version_from_feature_reference(&reference.reference))
             .unwrap_or_else(|| "0.0.0".to_string());
@@ -365,7 +366,7 @@ fn extract_feature_references_from_resolved_config(
     })?;
 
     for reference in &mut references {
-            if let Some(manifest) = resolve_local_feature_manifest(config_dir, &reference.reference)? {
+        if let Some(manifest) = resolve_local_feature_manifest(config_dir, &reference.reference)? {
             if reference.depends_on.is_empty() {
                 reference.depends_on = manifest.depends_on;
             }
@@ -373,21 +374,19 @@ fn extract_feature_references_from_resolved_config(
                 reference.installs_after = manifest.installs_after;
             }
             reference.options.get_or_insert_with(|| Value::Object(Default::default()));
-                if let Some(options) = reference.options.as_mut().and_then(Value::as_object_mut) {
-                    options.insert(
-                        "__deco_local_feature_id".to_string(),
-                        Value::String(manifest.id.unwrap_or_default()),
-                    );
-                    if let Some(version) = manifest.version {
-                        options.insert(
-                            "__deco_local_feature_version".to_string(),
-                            Value::String(version),
-                        );
-                    }
+            if let Some(options) = reference.options.as_mut().and_then(Value::as_object_mut) {
+                options.insert(
+                    "__deco_local_feature_id".to_string(),
+                    Value::String(manifest.id.unwrap_or_default()),
+                );
+                if let Some(version) = manifest.version {
                     options
-                        .insert("__deco_local_feature_path".to_string(), Value::String(manifest.path));
+                        .insert("__deco_local_feature_version".to_string(), Value::String(version));
                 }
+                options
+                    .insert("__deco_local_feature_path".to_string(), Value::String(manifest.path));
             }
+        }
     }
 
     Ok(references)
@@ -481,7 +480,10 @@ fn string_list_field(value: Option<&Value>) -> Vec<String> {
     }
 }
 
-fn parse_feature_manifest_summary(path: &Path) -> Result<FeatureManifestSummary, DecoError> {
+fn parse_feature_manifest_summary(
+    path: impl AsRef<Path>,
+) -> Result<FeatureManifestSummary, DecoError> {
+    let path = path.as_ref();
     let content = fs::read_to_string(path).map_err(|error| {
         DecoError::new(
             ErrorCategory::Config,
@@ -571,9 +573,7 @@ fn version_from_feature_reference(reference: &str) -> Option<String> {
 }
 
 fn integrity_from_feature_reference(reference: &str) -> Option<String> {
-    reference
-        .split_once("@sha256:")
-        .map(|(_, digest)| format!("sha256:{digest}"))
+    reference.split_once("@sha256:").map(|(_, digest)| format!("sha256:{digest}"))
 }
 
 fn dependency_cycle_nodes(graph: &BTreeMap<String, BTreeSet<String>>) -> BTreeSet<String> {

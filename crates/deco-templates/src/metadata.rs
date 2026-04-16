@@ -43,7 +43,108 @@ pub fn inspect_template_metadata(
     inspect_template_manifest_path(manifest_path)
 }
 
+pub fn select_single_manifest_path(path: impl AsRef<Path>) -> Result<PathBuf, DecoError> {
+    let path = path.as_ref();
+    if path.is_file() {
+        return Ok(path.to_path_buf());
+    }
+
+    if !path.is_dir() {
+        return Err(DecoError::new(
+            ErrorCategory::Config,
+            format!("template path `{}` does not exist", path.display()),
+        ));
+    }
+
+    let summary = inspect_template_manifest_path(path)?;
+    match summary.manifests.as_slice() {
+        [single] => Ok(PathBuf::from(&single.path)),
+        [] => Err(DecoError::new(
+            ErrorCategory::Config,
+            format!("template path `{}` does not contain a manifest", path.display()),
+        )),
+        _ => Err(DecoError::new(
+            ErrorCategory::Config,
+            format!(
+                "template path `{}` contains multiple manifests; pass a manifest file with `--manifest-path`",
+                path.display()
+            ),
+        )),
+    }
+}
+
+pub fn resolve_template_manifest_by_id(
+    collection_dir: impl AsRef<Path>,
+    template_id: &str,
+) -> Result<PathBuf, DecoError> {
+    let collection_dir = collection_dir.as_ref();
+    if !collection_dir.exists() {
+        return Err(DecoError::new(
+            ErrorCategory::Config,
+            format!("template collection `{}` does not exist", collection_dir.display()),
+        ));
+    }
+
+    if !collection_dir.is_dir() {
+        return Err(DecoError::new(
+            ErrorCategory::Config,
+            format!(
+                "template collection `{}` is not a directory; pass a collection directory with `--manifest-path`",
+                collection_dir.display()
+            ),
+        ));
+    }
+
+    let mut valid_manifests = Vec::new();
+    let mut matches = Vec::new();
+    for manifest_path in collect_manifest_files(collection_dir)? {
+        let document = match parse_manifest_document(&manifest_path) {
+            Ok(document) => document,
+            Err(_) => continue,
+        };
+        valid_manifests.push(manifest_path.clone());
+        if document.id.as_deref() == Some(template_id) {
+            matches.push(manifest_path);
+        }
+    }
+
+    if valid_manifests.is_empty() {
+        return Err(DecoError::new(
+            ErrorCategory::Config,
+            format!(
+                "template collection `{}` does not contain any valid manifests",
+                collection_dir.display()
+            ),
+        ));
+    }
+
+    matches.sort();
+    match matches.as_slice() {
+        [single] => Ok(single.clone()),
+        [] => Err(DecoError::new(
+            ErrorCategory::Config,
+            format!(
+                "template id `{template_id}` was not found in collection `{}`",
+                collection_dir.display()
+            ),
+        )),
+        many => Err(DecoError::new(
+            ErrorCategory::Config,
+            format!(
+                "template id `{template_id}` is duplicated in collection `{}`: {}",
+                collection_dir.display(),
+                many.iter().map(|path| path.display().to_string()).collect::<Vec<_>>().join(", "),
+            ),
+        )),
+    }
+}
+
 fn inspect_manifest_file(manifest_path: &Path) -> Result<TemplateManifestSummary, DecoError> {
+    let document = parse_manifest_document(manifest_path)?;
+    build_manifest_summary(manifest_path, document)
+}
+
+fn parse_manifest_document(manifest_path: &Path) -> Result<TemplateManifestDocument, DecoError> {
     let raw = fs::read_to_string(manifest_path).map_err(|error| {
         DecoError::new(
             ErrorCategory::Config,
@@ -52,14 +153,19 @@ fn inspect_manifest_file(manifest_path: &Path) -> Result<TemplateManifestSummary
         .with_details(error.to_string())
     })?;
 
-    let document: TemplateManifestDocument = serde_json::from_str(&raw).map_err(|error| {
+    serde_json::from_str(&raw).map_err(|error| {
         DecoError::new(
             ErrorCategory::Config,
             format!("failed to parse template manifest `{}`", manifest_path.display()),
         )
         .with_details(error.to_string())
-    })?;
+    })
+}
 
+fn build_manifest_summary(
+    manifest_path: &Path,
+    document: TemplateManifestDocument,
+) -> Result<TemplateManifestSummary, DecoError> {
     let source_dir = document
         .source_dir
         .as_ref()
@@ -157,5 +263,43 @@ mod tests {
         assert_eq!(result.scan_mode, TemplatesScanMode::File);
         assert_eq!(result.manifests.len(), 1);
         assert!(result.manifests[0].source_dir.is_some());
+    }
+
+    #[test]
+    fn resolve_template_manifest_by_id_returns_matching_manifest() {
+        let temp = tempdir().expect("tempdir should be created");
+        fs::create_dir_all(temp.path().join("alpha")).expect("alpha dir should exist");
+        fs::create_dir_all(temp.path().join("beta")).expect("beta dir should exist");
+        fs::write(temp.path().join("alpha.json"), r#"{"id":"alpha","source_dir":"./alpha"}"#)
+            .expect("alpha manifest should be written");
+        fs::write(temp.path().join("nested-beta.json"), r#"{"id":"beta","source_dir":"./beta"}"#)
+            .expect("beta manifest should be written");
+
+        let resolved =
+            resolve_template_manifest_by_id(temp.path(), "beta").expect("lookup should succeed");
+        assert!(resolved.ends_with("nested-beta.json"));
+    }
+
+    #[test]
+    fn resolve_template_manifest_by_id_rejects_duplicates() {
+        let temp = tempdir().expect("tempdir should be created");
+        fs::write(temp.path().join("a.json"), r#"{"id":"sample","source_dir":"./a"}"#)
+            .expect("manifest should be written");
+        fs::write(temp.path().join("b.json"), r#"{"id":"sample","source_dir":"./b"}"#)
+            .expect("manifest should be written");
+
+        let error = resolve_template_manifest_by_id(temp.path(), "sample")
+            .expect_err("duplicate ids should fail");
+        assert!(error.message.contains("duplicated"));
+    }
+
+    #[test]
+    fn resolve_template_manifest_by_id_reports_no_valid_manifests() {
+        let temp = tempdir().expect("tempdir should be created");
+        fs::write(temp.path().join("broken.json"), "{ not json").expect("manifest should exist");
+
+        let error = resolve_template_manifest_by_id(temp.path(), "sample")
+            .expect_err("invalid collection should fail");
+        assert!(error.message.contains("does not contain any valid manifests"));
     }
 }

@@ -82,6 +82,7 @@
         "--manifest-dir",
         "tests/fixtures/parity/workspaces/features-manifest-dir"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -103,6 +104,7 @@
         "--manifest-dir",
         "tests/fixtures/parity/workspaces/features-manifest-dir"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -145,6 +147,7 @@
         "--manifest-dir",
         "tests/fixtures/parity/workspaces/features-test"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -157,7 +160,7 @@
     },
     {
       "id": "templates-metadata",
-      "description": "Template metadata should scan a local manifest file.",
+      "description": "Template metadata local-only parity fixture for a local manifest file.",
       "workspace": "tests/fixtures/parity/workspaces/templates-sample",
       "command": [
         "templates",
@@ -165,6 +168,7 @@
         "--manifest-path",
         "tests/fixtures/parity/workspaces/templates-sample/template.json"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -177,8 +181,33 @@
       }
     },
     {
+      "id": "templates-metadata-logical-id",
+      "description": "Template metadata local-only parity fixture for logical template id resolution from a local collection.",
+      "workspace": "tests/fixtures/parity/workspaces/templates-collection",
+      "command": [
+        "templates",
+        "metadata",
+        "--manifest-path",
+        "tests/fixtures/parity/workspaces/templates-collection",
+        "--template-id",
+        "beta"
+      ],
+      "compare_with_upstream": false,
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"command\": \"templates\"",
+          "\"mode\": \"metadata\"",
+          "\"scan_mode\": \"file\"",
+          "\"beta\""
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
       "id": "templates-apply",
-      "description": "Template apply should materialize the local template tree.",
+      "description": "Template apply local-only parity fixture for a local template tree.",
       "workspace": "tests/fixtures/parity/workspaces/templates-sample",
       "command": [
         "templates",
@@ -188,6 +217,32 @@
         "--target-dir",
         "tests/fixtures/parity/workspaces/templates-sample-output"
       ],
+      "compare_with_upstream": false,
+      "expected": {
+        "exit_code": 0,
+        "stdout_contains": [
+          "\"outcome\": \"success\"",
+          "\"mode\": \"apply\"",
+          "\"files_copied\": 2"
+        ],
+        "stderr_contains": []
+      }
+    },
+    {
+      "id": "templates-apply-logical-id",
+      "description": "Template apply local-only parity fixture for logical template id resolution from a local collection.",
+      "workspace": "tests/fixtures/parity/workspaces/templates-collection",
+      "command": [
+        "templates",
+        "apply",
+        "--manifest-path",
+        "tests/fixtures/parity/workspaces/templates-collection",
+        "--template-id",
+        "beta",
+        "--target-dir",
+        "tests/fixtures/parity/workspaces/templates-collection-output"
+      ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -207,6 +262,7 @@
         "--lockfile",
         "tests/fixtures/parity/workspaces/lockfile-sample/deco-lock.json"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -228,6 +284,7 @@
         "tests/fixtures/parity/workspaces/lockfile-upgrade/deco-lock.json",
         "--dry-run"
       ],
+      "compare_with_upstream": false,
       "expected": {
         "exit_code": 0,
         "stdout_contains": [
@@ -252,8 +309,8 @@
           "\"outcome\": \"success\"",
           "\"command\": \"outdated\"",
           "\"format\": \"devcontainer-feature\"",
-          "\"feature_count\": 1",
-          "\"feature-a\""
+          "\"feature_count\": 0",
+          "\"features\": {}"
         ],
         "stderr_contains": []
       }
@@ -273,7 +330,7 @@
           "\"command\": \"upgrade\"",
           "\"format\": \"devcontainer-feature\"",
           "\"written\": false",
-          "\"feature_count\": 1",
+          "\"feature_count\": 2",
           "\"version\": \"2.0.0\""
         ],
         "stderr_contains": []

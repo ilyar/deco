@@ -24,6 +24,17 @@ The harness now supports:
 5. comparing exit-code parity with upstream in opt-in mode,
 6. comparing basic JSON envelope fields such as `command` and `outcome` when both binaries emit JSON stdout.
 
+Upstream-backed parity is intentionally narrower than local parity. In the current phase the
+required upstream-backed fixture subset is:
+
+- `read-configuration*`
+- `features-resolve-dependencies-config-local`
+- `outdated-feature-lockfile`
+- `upgrade-feature-lockfile-dry-run`
+
+Local-only fixtures remain valuable, but they do not currently map to a truthful upstream contract.
+That includes the local template flows and the legacy `--lockfile`-only fixtures.
+
 It does not yet normalize full JSON payloads field-by-field and does not regenerate snapshots.
 
 ## Environment Contract
@@ -46,3 +57,31 @@ to the upstream CLI. You can override that with `DECO_PARITY_FAKE_DOCKER`.
 
 The always-on test runs the sample fixture against the local `deco` binary.
 The upstream comparison test remains ignored and becomes active only when an upstream binary path is provided.
+
+## Recommended Commands
+
+Run local parity only:
+
+```bash
+cargo test -q -p deco-cli --test parity_harness
+```
+
+Run the current upstream-backed subset:
+
+```bash
+DECO_PARITY_UPSTREAM_NODE_ENTRYPOINT=/tmp/devcontainer-cli-build.qHh47l/devcontainer.js \
+DECO_PARITY_FILTER=read-configuration \
+cargo test -q -p deco-cli --test parity_harness parity_fixture_can_compare_with_upstream_when_configured -- --ignored
+
+DECO_PARITY_UPSTREAM_NODE_ENTRYPOINT=/tmp/devcontainer-cli-build.qHh47l/devcontainer.js \
+DECO_PARITY_FILTER=features-resolve-dependencies-config-local \
+cargo test -q -p deco-cli --test parity_harness parity_fixture_can_compare_with_upstream_when_configured -- --ignored
+
+DECO_PARITY_UPSTREAM_NODE_ENTRYPOINT=/tmp/devcontainer-cli-build.qHh47l/devcontainer.js \
+DECO_PARITY_FILTER=outdated-feature-lockfile \
+cargo test -q -p deco-cli --test parity_harness parity_fixture_can_compare_with_upstream_when_configured -- --ignored
+
+DECO_PARITY_UPSTREAM_NODE_ENTRYPOINT=/tmp/devcontainer-cli-build.qHh47l/devcontainer.js \
+DECO_PARITY_FILTER=upgrade-feature-lockfile-dry-run \
+cargo test -q -p deco-cli --test parity_harness parity_fixture_can_compare_with_upstream_when_configured -- --ignored
+```

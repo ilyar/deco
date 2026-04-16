@@ -14,7 +14,7 @@ fn plans_hooks_in_explicit_stage_order() {
         post_create: vec![LifecycleCommand::new("post-create")],
     };
 
-    let plan = LifecyclePlanner::default().plan(&hooks);
+    let plan = LifecyclePlanner.plan(&hooks);
 
     let stages: Vec<_> = plan.steps.iter().map(|step| step.stage).collect();
     assert_eq!(
@@ -37,7 +37,7 @@ fn plans_hooks_in_explicit_stage_order() {
 
 #[test]
 fn empty_hooks_produce_empty_plan() {
-    let plan = LifecyclePlanner::default().plan(&LifecycleHooks::default());
+    let plan = LifecyclePlanner.plan(&LifecycleHooks::default());
     assert!(plan.is_empty());
     assert!(plan.steps.is_empty());
 }
@@ -49,7 +49,7 @@ fn execution_stops_on_first_failed_step() {
         post_create: vec![LifecycleCommand::new("post-create")],
         ..Default::default()
     };
-    let plan = LifecyclePlanner::default().plan(&hooks);
+    let plan = LifecyclePlanner.plan(&hooks);
     let mut runner = FailingRunner { fail_on: 1, seen: Vec::new() };
 
     let report = execute_plan(&plan, &mut runner);

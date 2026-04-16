@@ -60,9 +60,11 @@ pub(crate) fn run_with_engine<R: CommandRunner>(
                 &engine,
                 resolved.kind,
                 image,
-                container_name,
-                target.workspace_folder.clone(),
-                target.remote_workspace_folder.clone(),
+                CreateContainerSpec {
+                    container_name,
+                    workspace_folder: target.workspace_folder.clone(),
+                    remote_workspace_folder: target.remote_workspace_folder.clone(),
+                },
                 existing,
                 "container-started",
             )
@@ -86,9 +88,11 @@ pub(crate) fn run_with_engine<R: CommandRunner>(
                 &engine,
                 resolved.kind,
                 image,
-                container_name,
-                target.workspace_folder.clone(),
-                target.remote_workspace_folder.clone(),
+                CreateContainerSpec {
+                    container_name,
+                    workspace_folder: target.workspace_folder.clone(),
+                    remote_workspace_folder: target.remote_workspace_folder.clone(),
+                },
                 existing,
                 "image-built-and-container-started",
             )
@@ -122,9 +126,7 @@ fn create_and_start<R: CommandRunner>(
     engine: &DockerEngine<R>,
     kind: DevcontainerConfigKind,
     image: String,
-    container_name: String,
-    workspace_folder: String,
-    remote_workspace_folder: String,
+    create: CreateContainerSpec,
     existing: Option<deco_engine::ContainerInspectResult>,
     execution_status: &'static str,
 ) -> Result<UpResult, DecoError> {
@@ -136,7 +138,7 @@ fn create_and_start<R: CommandRunner>(
             execution_status: "reused-existing-container",
             container_id,
             image,
-            remote_workspace_folder,
+            remote_workspace_folder: create.remote_workspace_folder,
             engine_status: Some(start_result.status),
         });
     }
@@ -144,14 +146,14 @@ fn create_and_start<R: CommandRunner>(
     let create_result = engine
         .create(ContainerCreateRequest {
             image: image.clone(),
-            name: Some(container_name),
+            name: Some(create.container_name),
             mounts: vec![ContainerBindMount::new(
-                PathBuf::from(workspace_folder),
-                PathBuf::from(&remote_workspace_folder),
+                PathBuf::from(create.workspace_folder),
+                PathBuf::from(&create.remote_workspace_folder),
             )],
             env: Vec::new(),
             labels: vec![("deco.managed".to_string(), "true".to_string())],
-            workdir: Some(remote_workspace_folder.clone()),
+            workdir: Some(create.remote_workspace_folder.clone()),
             user: None,
             entrypoint: None,
             command: None,
@@ -169,9 +171,15 @@ fn create_and_start<R: CommandRunner>(
         execution_status,
         container_id,
         image,
-        remote_workspace_folder,
+        remote_workspace_folder: create.remote_workspace_folder,
         engine_status: Some(start_result.status),
     })
+}
+
+struct CreateContainerSpec {
+    container_name: String,
+    workspace_folder: String,
+    remote_workspace_folder: String,
 }
 
 fn parse_container_id(result: &PrimitiveResult) -> Result<String, DecoError> {

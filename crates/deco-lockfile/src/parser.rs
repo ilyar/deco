@@ -4,8 +4,8 @@ use std::path::Path;
 
 use thiserror::Error;
 
-use crate::{FeatureLockfileDocument, LockfileDocument};
 use crate::model::CURRENT_LOCKFILE_SCHEMA_VERSION;
+use crate::{FeatureLockfileDocument, LockfileDocument};
 
 #[derive(Debug, Error)]
 pub enum LockfileParseError {
@@ -105,9 +105,7 @@ pub fn validate_feature_lockfile_document(
 ) -> Result<(), LockfileParseError> {
     for (id, feature) in &document.features {
         if id.trim().is_empty() {
-            return Err(LockfileParseError::Invalid(
-                "feature id must not be empty".to_string(),
-            ));
+            return Err(LockfileParseError::Invalid("feature id must not be empty".to_string()));
         }
         if feature.version.trim().is_empty() {
             return Err(LockfileParseError::Invalid(format!(

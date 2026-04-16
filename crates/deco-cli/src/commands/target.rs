@@ -24,7 +24,6 @@ pub fn resolve_named_target(args: TargetArgs) -> Result<ResolvedTarget, DecoErro
     )?;
 
     let container_name = generated_container_name(&resolved.workspace_folder);
-    let image_tag = generated_image_tag(&resolved.workspace_folder);
     let remote_workspace_folder = resolved
         .normalized
         .workspace_folder
@@ -37,7 +36,6 @@ pub fn resolve_named_target(args: TargetArgs) -> Result<ResolvedTarget, DecoErro
         workspace_folder,
         config_file,
         container_name,
-        image_tag,
         remote_workspace_folder,
         resolved,
     })
@@ -48,7 +46,6 @@ pub struct ResolvedTarget {
     pub workspace_folder: String,
     pub config_file: String,
     pub container_name: String,
-    pub image_tag: String,
     pub remote_workspace_folder: String,
     pub resolved: deco_config::ResolvedReadConfiguration,
 }

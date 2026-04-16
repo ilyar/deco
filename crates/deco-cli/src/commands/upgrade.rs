@@ -2,19 +2,18 @@ use std::fs;
 use std::path::Path;
 
 use deco_config::DevcontainerConfigKind;
-use deco_features::{
-    FeatureDependencyResolutionResult, resolve_feature_dependencies,
-};
+use deco_features::{FeatureDependencyResolutionResult, resolve_feature_dependencies};
 use deco_lockfile::{
-    CURRENT_LOCKFILE_SCHEMA_VERSION, FeatureLockfileDocument, LockfileDocument,
-    LockfileParseError, LockfileSource, LockfileTarget, parse_feature_lockfile_json,
-    parse_lockfile_json, serialize_feature_lockfile_json, serialize_lockfile_json,
+    CURRENT_LOCKFILE_SCHEMA_VERSION, FeatureLockfileDocument, LockfileDocument, LockfileParseError,
+    LockfileSource, LockfileTarget, parse_feature_lockfile_json, parse_lockfile_json,
+    serialize_feature_lockfile_json, serialize_lockfile_json,
 };
 use serde::Serialize;
 
 use crate::cli::UpgradeArgs;
 use crate::commands::outdated::{
-    LockfileFormat, resolve_lockfile_context, synthesized_feature_lockfile, validate_lockfile_summary,
+    LockfileFormat, resolve_lockfile_context, synthesized_feature_lockfile,
+    validate_lockfile_summary,
 };
 
 use deco_core_model::{DecoError, ErrorCategory};
@@ -93,7 +92,7 @@ pub fn run(args: UpgradeArgs) -> Result<UpgradeResult, DecoError> {
         if args.dry_run {
             false
         } else {
-            fs::write(&lockfile_path, serialized).map_err(|error| {
+            fs::write(lockfile_path, serialized).map_err(|error| {
                 DecoError::new(ErrorCategory::Config, "failed to write lockfile")
                     .with_details(format!("{}: {}", lockfile_path.display(), error))
             })?;
@@ -146,7 +145,10 @@ fn read_lockfile(path: &Path) -> Result<LockfileDocument, DecoError> {
             })?;
             Ok(document)
         }
-        Err(deco_lockfile::LockfileParseError::Json(_) | deco_lockfile::LockfileParseError::Invalid(_)) => {
+        Err(
+            deco_lockfile::LockfileParseError::Json(_)
+            | deco_lockfile::LockfileParseError::Invalid(_),
+        ) => {
             let feature_lockfile = parse_feature_lockfile_json(&content).map_err(|error| {
                 DecoError::new(ErrorCategory::Config, "failed to parse lockfile")
                     .with_details(format!("{}: {}", path.display(), error))

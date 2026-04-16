@@ -11,6 +11,7 @@ pub struct Cli {
 }
 
 #[derive(Debug, Subcommand)]
+#[allow(clippy::enum_variant_names)]
 pub enum Commands {
     ReadConfiguration(ReadConfigurationArgs),
     Build(TargetArgs),
