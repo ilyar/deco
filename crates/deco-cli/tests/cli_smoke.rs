@@ -1,8 +1,46 @@
 use assert_cmd::Command;
+use std::env;
 use std::fs;
 use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::process::Command as StdCommand;
 use tempfile::tempdir;
+
+fn deco_command() -> Command {
+    if let Ok(command) = Command::cargo_bin("deco") {
+        return command;
+    }
+
+    Command::new(resolve_local_deco_binary())
+}
+
+fn resolve_local_deco_binary() -> PathBuf {
+    if let Some(binary) = env::var_os("CARGO_BIN_EXE_deco").map(PathBuf::from) {
+        return binary;
+    }
+
+    let workspace_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .and_then(|path| path.parent())
+        .expect("deco-cli should live under <workspace>/crates/deco-cli")
+        .to_path_buf();
+    let candidate = workspace_root.join("target").join("debug").join("deco");
+    if candidate.exists() {
+        return candidate;
+    }
+
+    let status = StdCommand::new("cargo")
+        .arg("build")
+        .arg("-q")
+        .arg("-p")
+        .arg("deco")
+        .current_dir(&workspace_root)
+        .status()
+        .expect("building root deco binary should succeed");
+    assert!(status.success(), "building root deco binary should succeed");
+    candidate
+}
 
 #[test]
 fn read_configuration_returns_success_envelope() {
@@ -20,7 +58,7 @@ fn read_configuration_returns_success_envelope() {
     )
     .expect("config file should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("read-configuration").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -44,7 +82,7 @@ fn build_returns_success_for_image_based_config() {
     )
     .expect("config file should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("build").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -65,7 +103,7 @@ fn read_configuration_detects_compose_configs() {
     )
     .expect("config file should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("read-configuration").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -79,7 +117,7 @@ fn read_configuration_detects_compose_configs() {
 fn read_configuration_returns_structured_config_error_when_missing() {
     let temp = tempdir().expect("tempdir should be created");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("read-configuration").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -103,7 +141,7 @@ fn features_from_manifest_directory_returns_summary() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("--manifest-dir").arg(temp.path());
 
     command
@@ -133,7 +171,7 @@ fn features_from_config_returns_references_summary() {
     )
     .expect("config file should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -161,7 +199,7 @@ fn features_resolve_dependencies_returns_graph_summary() {
     fs::write(temp.path().join("feature-b.json"), r#"{ "id": "feature-b" }"#)
         .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("resolve-dependencies").arg("--manifest-dir").arg(temp.path());
 
     command
@@ -195,7 +233,7 @@ fn features_resolve_dependencies_reads_config_metadata() {
     )
     .expect("config should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("resolve-dependencies").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -224,7 +262,7 @@ fn features_test_reports_pass_fail_summary() {
     fs::write(temp.path().join("broken.json"), r#"{ "name": "Broken" }"#)
         .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("test").arg("--manifest-dir").arg(temp.path());
 
     command
@@ -249,7 +287,7 @@ fn features_resolve_dependencies_returns_local_graph() {
     fs::write(temp.path().join("feature-b.json"), r#"{ "id": "feature-b" }"#)
         .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("resolve-dependencies").arg("--manifest-dir").arg(temp.path());
 
     command
@@ -267,7 +305,7 @@ fn features_test_reports_failures_for_invalid_manifests() {
     fs::write(temp.path().join("broken.json"), r#"{ "name": "Broken" }"#)
         .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("test").arg("--manifest-dir").arg(temp.path());
 
     command
@@ -291,7 +329,7 @@ fn features_test_accepts_project_folder_layout() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("features").arg("test").arg("--project-folder").arg(temp.path());
 
     command
@@ -341,7 +379,7 @@ fn outdated_supports_upstream_feature_lockfiles_via_workspace_folder() {
     )
     .expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("outdated").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -381,7 +419,7 @@ fn upgrade_can_generate_feature_lockfile_from_workspace_config_in_dry_run_mode()
     )
     .expect("feature manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("upgrade").arg("--workspace-folder").arg(temp.path()).arg("--dry-run");
 
     command
@@ -411,7 +449,7 @@ fn templates_metadata_returns_manifest_summary() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("metadata")
@@ -440,7 +478,7 @@ fn templates_metadata_accepts_template_id_path() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("metadata")
@@ -475,7 +513,7 @@ fn templates_metadata_scans_manifest_directory() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("templates").arg("metadata").arg("--manifest-path").arg(temp.path());
 
     command
@@ -509,7 +547,7 @@ fn templates_metadata_resolves_logical_template_id_from_collection() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("metadata")
@@ -540,7 +578,7 @@ fn templates_metadata_reports_missing_logical_template_id() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("metadata")
@@ -578,7 +616,7 @@ fn templates_metadata_reports_duplicate_logical_template_id() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("metadata")
@@ -612,7 +650,7 @@ fn templates_apply_copies_files() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("apply")
@@ -667,7 +705,7 @@ fn templates_apply_resolves_logical_template_id_from_collection() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("apply")
@@ -714,7 +752,7 @@ fn templates_apply_accepts_template_id_directory_and_workspace_folder() {
     )
     .expect("manifest should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command
         .arg("templates")
         .arg("apply")
@@ -765,7 +803,7 @@ fn outdated_reports_lockfile_summary() {
     )
     .expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("outdated").arg("--lockfile").arg(&lockfile);
 
     command
@@ -805,7 +843,7 @@ fn upgrade_writes_normalized_lockfile_unless_dry_run() {
     )
     .expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("upgrade").arg("--lockfile").arg(&lockfile);
 
     command
@@ -839,7 +877,7 @@ fn upgrade_dry_run_does_not_write_back() {
         }"#;
     fs::write(&lockfile, original).expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("upgrade").arg("--lockfile").arg(&lockfile).arg("--dry-run");
 
     command
@@ -872,7 +910,7 @@ fn outdated_can_resolve_lockfile_from_workspace_folder() {
     )
     .expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("outdated").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -901,7 +939,7 @@ fn upgrade_can_resolve_lockfile_from_workspace_folder_in_dry_run_mode() {
         }"#;
     fs::write(&lockfile_path, original).expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("upgrade").arg("--workspace-folder").arg(temp.path()).arg("--dry-run");
 
     command
@@ -961,7 +999,7 @@ fn outdated_exposes_feature_graph_from_resolved_config() {
     )
     .expect("lockfile should be written");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("outdated").arg("--workspace-folder").arg(temp.path());
 
     command
@@ -1024,7 +1062,7 @@ esac
 
     let old_path = std::env::var_os("PATH").expect("PATH should exist");
 
-    let mut command = Command::cargo_bin("deco").expect("binary should build");
+    let mut command = deco_command();
     command.arg("set-up").arg("--workspace-folder").arg(&workspace);
     command.current_dir(&workspace);
     command.env("PATH", format!("{}:{}", fake_bin.display(), old_path.to_string_lossy()));
