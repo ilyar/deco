@@ -10,12 +10,50 @@ permissions:
   id-token: write
   attestations: write
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  release:
+  prepare:
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ github.token }}
-      TARGET_TRIPLE: x86_64-unknown-linux-gnu
+    outputs:
+      version: ${{ steps.meta.outputs.version }}
+      prerelease: ${{ steps.meta.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve release metadata
+        id: meta
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected_version="${GITHUB_REF_NAME#v}"
+          actual_version="$(
+            python3 - <<'PY'
+            import pathlib
+            import tomllib
+
+            cargo = pathlib.Path("Cargo.toml")
+            data = tomllib.loads(cargo.read_text(encoding="utf-8"))
+            print(data["workspace"]["package"]["version"])
+            PY
+          )"
+          if [[ "$actual_version" != "$expected_version" ]]; then
+            echo "tag version $expected_version does not match workspace version $actual_version" >&2
+            exit 1
+          fi
+          prerelease="false"
+          if [[ "$expected_version" == *-* ]]; then
+            prerelease="true"
+          fi
+          echo "version=$actual_version" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+
+  verify:
+    runs-on: ubuntu-latest
+    needs: prepare
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,17 +67,6 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: . -> target
-
-      - name: Validate tag against binary version
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected_version="${GITHUB_REF_NAME#v}"
-          actual_version="$(cargo run -q -p deco -- --version | awk '{print $2}')"
-          if [[ "$actual_version" != "$expected_version" ]]; then
-            echo "tag version $expected_version does not match binary version $actual_version" >&2
-            exit 1
-          fi
 
       - name: Build root binary for integration tests
         run: cargo build -q -p deco
@@ -55,43 +82,195 @@ jobs:
           cargo test -q -p deco-cli --test cli_smoke
           cargo test -q -p deco-cli --test parity_harness
 
-      - name: Build release binary
-        run: cargo build --release --locked
+  build-native:
+    needs: [prepare, verify]
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            binary_path: target/x86_64-unknown-linux-gnu/release/deco
+            archive_type: tar.gz
+          - runner: windows-latest
+            target: x86_64-pc-windows-msvc
+            binary_path: target/x86_64-pc-windows-msvc/release/deco.exe
+            archive_type: zip
+          - runner: macos-15-intel
+            target: x86_64-apple-darwin
+            binary_path: target/x86_64-apple-darwin/release/deco
+            archive_type: tar.gz
+          - runner: macos-14
+            target: aarch64-apple-darwin
+            binary_path: target/aarch64-apple-darwin/release/deco
+            archive_type: tar.gz
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Package release assets
-        id: package
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: ${{ matrix.target }}
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - name: Build release binary
+        run: cargo build --release --locked -p deco --target ${{ matrix.target }}
+
+      - name: Package Unix release asset
+        if: runner.os != 'Windows'
         shell: bash
         run: |
-          set -euo pipefail
-          version="${GITHUB_REF_NAME#v}"
-          package_name="deco-${version}-${TARGET_TRIPLE}"
-          mkdir -p "dist/${package_name}"
-          cp target/release/deco "dist/${package_name}/deco"
-          cp LICENSE "dist/${package_name}/LICENSE"
-          cp README.md "dist/${package_name}/README.md"
-          tar -C dist -czf "dist/${package_name}.tar.gz" "${package_name}"
-          sha256sum "dist/${package_name}.tar.gz" > "dist/${package_name}.tar.gz.sha256"
-          echo "package_name=${package_name}" >> "$GITHUB_OUTPUT"
-          echo "archive_path=dist/${package_name}.tar.gz" >> "$GITHUB_OUTPUT"
-          echo "checksum_path=dist/${package_name}.tar.gz.sha256" >> "$GITHUB_OUTPUT"
+          chmod +x scripts/package-unix.sh
+          scripts/package-unix.sh \
+            "${{ needs.prepare.outputs.version }}" \
+            "${{ matrix.target }}" \
+            "${{ matrix.binary_path }}" \
+            dist
 
-      - name: Upload workflow artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-assets
-          path: |
-            ${{ steps.package.outputs.archive_path }}
-            ${{ steps.package.outputs.checksum_path }}
+      - name: Package Windows release asset
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          ./scripts/package-windows.ps1 `
+            -Version "${{ needs.prepare.outputs.version }}" `
+            -Target "${{ matrix.target }}" `
+            -BinaryPath "${{ matrix.binary_path }}" `
+            -OutputDir "dist"
 
       - name: Generate provenance attestation for archive
         uses: actions/attest@v4
         with:
-          subject-path: ${{ steps.package.outputs.archive_path }}
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive_type }}
 
       - name: Generate provenance attestation for checksum
         uses: actions/attest@v4
         with:
-          subject-path: ${{ steps.package.outputs.checksum_path }}
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive_type }}.sha256
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-${{ matrix.target }}
+          path: |
+            dist/deco-v${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive_type }}
+            dist/deco-v${{ needs.prepare.outputs.version }}-${{ matrix.target }}.${{ matrix.archive_type }}.sha256
+
+  build-linux-arm64:
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          target: aarch64-unknown-linux-musl
+
+      - name: Cache cargo artifacts
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: . -> target
+
+      - name: Install cross
+        run: cargo install cross --locked
+
+      - name: Build Linux ARM64 release binary
+        run: cross build --release --locked -p deco --target aarch64-unknown-linux-musl
+
+      - name: Package Linux ARM64 release asset
+        shell: bash
+        run: |
+          chmod +x scripts/package-unix.sh
+          scripts/package-unix.sh \
+            "${{ needs.prepare.outputs.version }}" \
+            "aarch64-unknown-linux-musl" \
+            "target/aarch64-unknown-linux-musl/release/deco" \
+            dist
+
+      - name: Generate provenance attestation for archive
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-aarch64-unknown-linux-musl.tar.gz
+
+      - name: Generate provenance attestation for checksum
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-aarch64-unknown-linux-musl.tar.gz.sha256
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-aarch64-unknown-linux-musl
+          path: |
+            dist/deco-v${{ needs.prepare.outputs.version }}-aarch64-unknown-linux-musl.tar.gz
+            dist/deco-v${{ needs.prepare.outputs.version }}-aarch64-unknown-linux-musl.tar.gz.sha256
+
+  build-freebsd:
+    needs: [prepare, verify]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build FreeBSD release binary
+        uses: vmactions/freebsd-vm@v1
+        with:
+          release: "14.4"
+          usesh: true
+          sync: rsync
+          run: |
+            set -euo pipefail
+            pkg install -y bash curl
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
+            . "$HOME/.cargo/env"
+            cargo build --release --locked -p deco
+            bash scripts/package-unix.sh \
+              "${{ needs.prepare.outputs.version }}" \
+              "x86_64-unknown-freebsd" \
+              "target/release/deco" \
+              "dist"
+
+      - name: Generate provenance attestation for archive
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz
+
+      - name: Generate provenance attestation for checksum
+        uses: actions/attest@v4
+        with:
+          subject-path: dist/deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz.sha256
+
+      - name: Upload release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-x86_64-unknown-freebsd
+          path: |
+            dist/deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz
+            dist/deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz.sha256
+
+  publish:
+    needs:
+      - prepare
+      - build-native
+      - build-linux-arm64
+      - build-freebsd
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Download release assets
+        uses: actions/download-artifact@v4
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: dist
 
       - name: Write release notes
         shell: bash
@@ -99,44 +278,53 @@ jobs:
           cat > RELEASE_NOTES.md <<EOF
           ## deco ${GITHUB_REF_NAME}
 
-          First public alpha release.
+          First public alpha release with downloadable binaries for Linux, Windows, macOS, and FreeBSD.
 
           Included assets:
 
-          - \`${{ steps.package.outputs.package_name }}.tar.gz\`
-          - \`${{ steps.package.outputs.package_name }}.tar.gz.sha256\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-linux-gnu.tar.gz\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-aarch64-unknown-linux-musl.tar.gz\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-x86_64-pc-windows-msvc.zip\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-x86_64-apple-darwin.tar.gz\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-aarch64-apple-darwin.tar.gz\`
+          - \`deco-v${{ needs.prepare.outputs.version }}-x86_64-unknown-freebsd.tar.gz\`
+          - one \`.sha256\` file per archive
 
           Provenance:
 
-          This release publishes GitHub artifact attestations for the archive and checksum so consumers can verify the supply chain with:
+          This release publishes GitHub artifact attestations for every archive and checksum so consumers can verify the supply chain with:
 
           \`\`\`sh
-          gh attestation verify ${{ steps.package.outputs.package_name }}.tar.gz -R ${{ github.repository }}
+          gh attestation verify PATH/TO/ARTIFACT -R ${{ github.repository }}
           \`\`\`
 
           License: MIT
           Author: ilyar
           EOF
 
-      - name: Create or update GitHub Release
+      - name: Create or update GitHub release
         shell: bash
         run: |
           set -euo pipefail
-          prerelease_flag=""
-          if [[ "${GITHUB_REF_NAME}" == *-* ]]; then
-            prerelease_flag="--prerelease"
+          shopt -s nullglob
+          assets=(dist/*)
+          if [[ ${#assets[@]} -eq 0 ]]; then
+            echo "no release assets were downloaded" >&2
+            exit 1
           fi
 
           if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
-            gh release upload "${GITHUB_REF_NAME}" \
-              "${{ steps.package.outputs.archive_path }}" \
-              "${{ steps.package.outputs.checksum_path }}" \
-              --clobber
+            gh release upload "${GITHUB_REF_NAME}" "${assets[@]}" --clobber
+            gh release edit "${GITHUB_REF_NAME}" \
+              --title "${GITHUB_REF_NAME}" \
+              --notes-file RELEASE_NOTES.md
           else
-            gh release create "${GITHUB_REF_NAME}" \
-              "${{ steps.package.outputs.archive_path }}" \
-              "${{ steps.package.outputs.checksum_path }}" \
+            prerelease_flag=()
+            if [[ "${{ needs.prepare.outputs.prerelease }}" == "true" ]]; then
+              prerelease_flag+=(--prerelease)
+            fi
+            gh release create "${GITHUB_REF_NAME}" "${assets[@]}" \
               --title "${GITHUB_REF_NAME}" \
               --notes-file RELEASE_NOTES.md \
-              ${prerelease_flag}
+              "${prerelease_flag[@]}"
           fi

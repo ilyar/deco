@@ -1,6 +1,6 @@
 # DEVELOP
 
-Developer guide for building, testing, and releasing `deco`.
+Developer guide for building, testing, packaging, and releasing `deco`.
 
 License: MIT  
 Author: ilyar
@@ -61,7 +61,10 @@ ls -l target/release/deco
 Create a local archive if needed:
 
 ```sh
-tar -czf deco-$(cargo run -q -p deco -- --version | awk '{print $2}').tar.gz LICENSE -C target/release deco
+scripts/package-unix.sh \
+  "$(cargo run -q -p deco -- --version | awk '{print $2}')" \
+  "$(rustc -vV | awk '/host:/ {print $2}')" \
+  target/release/deco
 ```
 
 ## Release Process
@@ -77,11 +80,21 @@ Release workflow model:
 1. Push a semantic version tag such as `v1.0.0-alpha.1`.
 2. GitHub Actions runs the release workflow.
 3. The workflow:
-   - builds the release binary
-   - packages the binary and `LICENSE`
-   - generates `SHA256SUMS`
+   - validates version, lint, tests, and parity gates
+   - builds release binaries for Linux, Windows, macOS, and FreeBSD
+   - packages each binary with `README.md` and `LICENSE`
+   - generates one `.sha256` file per archive
    - creates GitHub artifact attestations for supply-chain provenance
    - creates a GitHub Release and uploads the assets
+
+Published targets for `v1.0.0-alpha.1`:
+
+- `x86_64-unknown-linux-gnu`
+- `aarch64-unknown-linux-musl`
+- `x86_64-pc-windows-msvc`
+- `x86_64-apple-darwin`
+- `aarch64-apple-darwin`
+- `x86_64-unknown-freebsd`
 
 Create and push the tag:
 

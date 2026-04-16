@@ -61,7 +61,16 @@ Releases are produced from Git tags such as:
 v1.0.0-alpha.1
 ```
 
-The tag-triggered workflow builds the release artifacts, publishes a GitHub Release, and generates artifact attestations for supply-chain provenance.
+The tag-triggered workflow validates the release gates, builds the published binaries, publishes a GitHub Release, and generates artifact attestations for supply-chain provenance.
+
+Expected published targets for `v1.0.0-alpha.1`:
+
+- `x86_64-unknown-linux-gnu`
+- `aarch64-unknown-linux-musl`
+- `x86_64-pc-windows-msvc`
+- `x86_64-apple-darwin`
+- `aarch64-apple-darwin`
+- `x86_64-unknown-freebsd`
 
 ## License
 

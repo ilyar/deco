@@ -43,6 +43,19 @@ deco --version
 deco --help
 ```
 
+Prebuilt binaries are published on GitHub Releases for:
+
+- Linux `x86_64`
+- Linux `aarch64`
+- Windows `x86_64`
+- macOS `x86_64`
+- macOS `aarch64`
+- FreeBSD `x86_64`
+
+Download the asset that matches your platform from:
+
+- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.1`
+
 For local development without install:
 
 ```sh
@@ -222,4 +235,4 @@ More detail: [docs/stderr-convention.md](/home/ilyar/startup/deco/repo/deco/docs
 
 - [DEVELOP.md](/home/ilyar/startup/deco/repo/deco/DEVELOP.md:1) for building, testing, releasing, and verifying artifacts
 - [CONTRIBUTING.md](/home/ilyar/startup/deco/repo/deco/CONTRIBUTING.md:1) for contribution workflow and review expectations
-- [docs/installing.md](/home/ilyar/startup/deco/repo/deco/docs/installing.md:1) for install and local release commands
+- [docs/installing.md](/home/ilyar/startup/deco/repo/deco/docs/installing.md:1) for release downloads, install commands, and local release commands
