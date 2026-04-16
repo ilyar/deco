@@ -8,10 +8,6 @@ use std::process::Command as StdCommand;
 use tempfile::tempdir;
 
 fn deco_command() -> Command {
-    if let Ok(command) = Command::cargo_bin("deco") {
-        return command;
-    }
-
     Command::new(resolve_local_deco_binary())
 }
 
