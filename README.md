@@ -46,13 +46,13 @@ deco --help
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | bash
 ```
 
 Pick a different directory or explicit tag if needed:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | \
   bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.3
 ```
 

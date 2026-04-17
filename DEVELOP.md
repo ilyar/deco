@@ -74,7 +74,7 @@ deco --version
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | bash
 ```
 
 Build a local optimized binary:
@@ -108,7 +108,7 @@ Release workflow model:
 3. The workflow:
    - validates version, lint, tests, parity gates, and the checked-in `.devcontainer` through `just ci`
    - builds release binaries for Linux, Windows, macOS, and FreeBSD
-   - keeps `scripts/install.sh` available at the tagged raw GitHub URL for `curl | bash`
+   - keeps `install.sh` available at the repository root for `curl | bash`
    - packages each binary with `README.md` and `LICENSE`
    - generates one `.sha256` file per archive
    - creates GitHub artifact attestations for supply-chain provenance

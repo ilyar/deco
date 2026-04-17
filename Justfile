@@ -4,6 +4,7 @@ default:
   @just --list
 
 install-script-check:
+  bash -n install.sh
   bash -n scripts/install.sh
 
 fmt:

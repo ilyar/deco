@@ -54,13 +54,13 @@ deco --version
 For Linux, macOS, and FreeBSD, install the published binary directly:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | bash
 ```
 
 Optional flags:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | \
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | \
   bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.3
 ```
 
