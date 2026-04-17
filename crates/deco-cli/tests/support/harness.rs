@@ -67,10 +67,6 @@ impl ParityHarness {
         RunnerSpec { binary, args, env: BTreeMap::new() }
     }
 
-    pub fn build_runner_for_fixture(&self, binary: PathBuf, fixture: &ParityFixture) -> RunnerSpec {
-        self.build_runner_for_fixture_with_prefix(binary, Vec::new(), fixture)
-    }
-
     pub fn build_runner_for_fixture_with_prefix(
         &self,
         binary: PathBuf,
@@ -108,7 +104,8 @@ impl ParityHarness {
         fixture: &ParityFixture,
         binary: PathBuf,
     ) -> Result<CapturedRun, String> {
-        let runner = self.build_runner_for_fixture(binary, fixture);
+        let runner =
+            self.build_runner_for_fixture_with_prefix(binary, vec!["--json".to_string()], fixture);
         self.capture_run(&runner)
     }
 

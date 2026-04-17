@@ -6,6 +6,9 @@ use clap::{Args, Parser, Subcommand};
 #[command(name = "deco")]
 #[command(version, about = "Rust-first dev container CLI")]
 pub struct Cli {
+    #[arg(short = 'j', long, global = true)]
+    pub json: bool,
+
     #[command(subcommand)]
     pub command: Commands,
 }

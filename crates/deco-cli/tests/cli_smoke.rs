@@ -1,4 +1,5 @@
 use assert_cmd::Command;
+use predicates::prelude::PredicateBooleanExt;
 use std::env;
 use std::fs;
 use std::io::Write;
@@ -8,6 +9,12 @@ use std::process::Command as StdCommand;
 use tempfile::tempdir;
 
 fn deco_command() -> Command {
+    let mut command = Command::new(resolve_local_deco_binary());
+    command.arg("--json");
+    command
+}
+
+fn deco_text_command() -> Command {
     Command::new(resolve_local_deco_binary())
 }
 
@@ -63,6 +70,41 @@ fn read_configuration_returns_success_envelope() {
         .stdout(predicates::str::contains("\"normalized\""))
         .stdout(predicates::str::contains("\"image\": \"mcr.microsoft.com/devcontainers/rust:1\""))
         .stdout(predicates::str::contains("\"configuration\""));
+}
+
+#[test]
+fn read_configuration_returns_human_text_by_default() {
+    let temp = tempdir().expect("tempdir should be created");
+    fs::create_dir_all(temp.path().join(".devcontainer")).expect("config directory should exist");
+    fs::write(
+        temp.path().join(".devcontainer").join("devcontainer.json"),
+        r#"{ "image": "alpine:3.20" }"#,
+    )
+    .expect("config file should be written");
+
+    let mut command = deco_text_command();
+    command.arg("read-configuration").arg("--workspace-folder").arg(temp.path());
+
+    command
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("resolved image config"))
+        .stdout(predicates::str::contains("devcontainer.json"))
+        .stdout(predicates::str::contains("{").not());
+}
+
+#[test]
+fn read_configuration_returns_human_error_by_default() {
+    let temp = tempdir().expect("tempdir should be created");
+
+    let mut command = deco_text_command();
+    command.arg("read-configuration").arg("--workspace-folder").arg(temp.path());
+
+    command
+        .assert()
+        .code(3)
+        .stdout(predicates::str::is_empty())
+        .stderr(predicates::str::contains("error: dev container config not found"));
 }
 
 #[test]
