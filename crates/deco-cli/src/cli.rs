@@ -44,6 +44,8 @@ pub struct TargetArgs {
     pub workspace_folder: Option<PathBuf>,
     #[arg(long)]
     pub config: Option<PathBuf>,
+    #[arg(long = "id-label")]
+    pub id_label: Vec<String>,
 }
 
 #[derive(Debug, Clone, Args)]
@@ -54,6 +56,8 @@ pub struct ExecArgs {
     pub workspace_folder: Option<PathBuf>,
     #[arg(long)]
     pub config: Option<PathBuf>,
+    #[arg(long = "id-label")]
+    pub id_label: Vec<String>,
     #[arg(long)]
     pub user: Option<String>,
     #[arg(long)]
@@ -70,6 +74,8 @@ pub struct RunUserCommandsArgs {
     pub workspace_folder: Option<PathBuf>,
     #[arg(long)]
     pub config: Option<PathBuf>,
+    #[arg(long = "id-label")]
+    pub id_label: Vec<String>,
 }
 
 #[derive(Debug, Clone, Args)]

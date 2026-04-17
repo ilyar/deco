@@ -1070,6 +1070,9 @@ fn set_up_runs_via_cli_and_returns_nested_summary() {
         file,
         r#"#!/bin/sh
 case "$1" in
+  ps)
+    exit 0
+    ;;
   inspect)
     exit 1
     ;;
@@ -1109,4 +1112,188 @@ esac
         .stdout(predicates::str::contains("\"execution_status\": \"completed\""))
         .stdout(predicates::str::contains("\"container_id\": \"container-setup\""))
         .stdout(predicates::str::contains("\"planned_steps\": 1"));
+}
+
+#[test]
+fn exec_streams_child_stdout_in_text_mode() {
+    let temp = tempdir().expect("tempdir should be created");
+    let workspace = temp.path().join("workspace");
+    let config_dir = workspace.join(".devcontainer");
+    let fake_bin = temp.path().join("bin");
+    let log_path = temp.path().join("docker.log");
+    fs::create_dir_all(&config_dir).expect("config directory should exist");
+    fs::create_dir_all(&fake_bin).expect("fake bin directory should exist");
+    fs::write(config_dir.join("devcontainer.json"), r#"{ "image": "alpine:3.20" }"#)
+        .expect("config file should be written");
+
+    let docker_script = fake_bin.join("docker");
+    let mut file = fs::File::create(&docker_script).expect("docker script should be created");
+    writeln!(
+        file,
+        r#"#!/bin/sh
+set -eu
+log="{log_path}"
+case "$1" in
+  ps)
+    exit 0
+    ;;
+  inspect)
+    exit 1
+    ;;
+  create)
+    printf 'create:%s\n' "$*" >> "$log"
+    printf '%s\n' container-exec
+    ;;
+  start)
+    printf 'start:%s\n' "$*" >> "$log"
+    printf '%s\n' container-exec
+    ;;
+  exec)
+    printf 'exec:%s\n' "$*" >> "$log"
+    printf '/workspaces/workspace\n'
+    exit 0
+    ;;
+  *)
+    exit 64
+    ;;
+esac
+"#,
+        log_path = log_path.display()
+    )
+    .expect("docker script should be written");
+    drop(file);
+    let mut permissions =
+        fs::metadata(&docker_script).expect("docker script metadata should exist").permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&docker_script, permissions).expect("docker script should be executable");
+
+    let old_path = std::env::var_os("PATH").expect("PATH should exist");
+
+    let mut command = deco_text_command();
+    command.arg("exec").arg("--workspace-folder").arg(&workspace).arg("pwd");
+    command.current_dir(&workspace);
+    command.env("PATH", format!("{}:{}", fake_bin.display(), old_path.to_string_lossy()));
+
+    command
+        .assert()
+        .success()
+        .stdout(predicates::str::contains("/workspaces/workspace"))
+        .stdout(predicates::str::contains("command executed").not())
+        .stderr(predicates::str::is_empty());
+
+    let log = fs::read_to_string(&log_path).expect("docker log should be readable");
+    assert!(log.contains(&format!(
+        "--label {}={}",
+        "devcontainer.local_folder",
+        workspace.display()
+    )));
+    assert!(log.contains(&format!(
+        "--label {}={}",
+        "devcontainer.config_file",
+        workspace.join(".devcontainer").join("devcontainer.json").display()
+    )));
+    assert!(log.contains("exec:exec --workdir /workspaces/workspace container-exec pwd"));
+}
+
+#[test]
+fn exec_returns_child_exit_status_and_stderr_in_text_mode() {
+    let temp = tempdir().expect("tempdir should be created");
+    let workspace = temp.path().join("workspace");
+    let config_dir = workspace.join(".devcontainer");
+    let fake_bin = temp.path().join("bin");
+    fs::create_dir_all(&config_dir).expect("config directory should exist");
+    fs::create_dir_all(&fake_bin).expect("fake bin directory should exist");
+    fs::write(config_dir.join("devcontainer.json"), r#"{ "image": "alpine:3.20" }"#)
+        .expect("config file should be written");
+
+    let docker_script = fake_bin.join("docker");
+    let mut file = fs::File::create(&docker_script).expect("docker script should be created");
+    writeln!(
+        file,
+        r#"#!/bin/sh
+case "$1" in
+  inspect)
+    printf '[{{"Id":"container-exec","State":{{"Running":true}}}}]'
+    ;;
+  exec)
+    printf 'boom\n' >&2
+    exit 7
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+"#
+    )
+    .expect("docker script should be written");
+    drop(file);
+    let mut permissions =
+        fs::metadata(&docker_script).expect("docker script metadata should exist").permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&docker_script, permissions).expect("docker script should be executable");
+
+    let old_path = std::env::var_os("PATH").expect("PATH should exist");
+
+    let mut command = deco_text_command();
+    command.arg("exec").arg("--workspace-folder").arg(&workspace).arg("pwd");
+    command.current_dir(&workspace);
+    command.env("PATH", format!("{}:{}", fake_bin.display(), old_path.to_string_lossy()));
+
+    command
+        .assert()
+        .code(7)
+        .stdout(predicates::str::is_empty())
+        .stderr(predicates::str::contains("boom"));
+}
+
+#[test]
+fn exec_json_mode_preserves_machine_readable_output() {
+    let temp = tempdir().expect("tempdir should be created");
+    let workspace = temp.path().join("workspace");
+    let config_dir = workspace.join(".devcontainer");
+    let fake_bin = temp.path().join("bin");
+    fs::create_dir_all(&config_dir).expect("config directory should exist");
+    fs::create_dir_all(&fake_bin).expect("fake bin directory should exist");
+    fs::write(config_dir.join("devcontainer.json"), r#"{ "image": "alpine:3.20" }"#)
+        .expect("config file should be written");
+
+    let docker_script = fake_bin.join("docker");
+    let mut file = fs::File::create(&docker_script).expect("docker script should be created");
+    writeln!(
+        file,
+        r#"#!/bin/sh
+case "$1" in
+  inspect)
+    printf '[{{"Id":"container-exec","State":{{"Running":true}}}}]'
+    ;;
+  exec)
+    printf '/workspaces/workspace\n'
+    exit 7
+    ;;
+  *)
+    exit 0
+    ;;
+esac
+"#
+    )
+    .expect("docker script should be written");
+    drop(file);
+    let mut permissions =
+        fs::metadata(&docker_script).expect("docker script metadata should exist").permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&docker_script, permissions).expect("docker script should be executable");
+
+    let old_path = std::env::var_os("PATH").expect("PATH should exist");
+
+    let mut command = deco_command();
+    command.arg("exec").arg("--workspace-folder").arg(&workspace).arg("pwd");
+    command.current_dir(&workspace);
+    command.env("PATH", format!("{}:{}", fake_bin.display(), old_path.to_string_lossy()));
+
+    command
+        .assert()
+        .code(7)
+        .stdout(predicates::str::contains("\"command\": \"exec\""))
+        .stdout(predicates::str::contains("\"outcome\": \"success\""))
+        .stdout(predicates::str::contains("\"exit_status\": 7"));
 }

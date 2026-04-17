@@ -1,5 +1,7 @@
 mod cli;
 mod commands;
+#[cfg(test)]
+mod test_support;
 
 use std::fmt;
 use std::process::ExitCode;
@@ -14,84 +16,94 @@ use crate::cli::{Cli, Commands};
 pub fn main_entry() -> ExitCode {
     let cli = Cli::parse();
     let output_mode = OutputMode::from_json_flag(cli.json);
-    if let Err(error) = run(cli, output_mode) {
-        eprintln!("error: {}", error);
-        if output_mode == OutputMode::Json {
-            let envelope = CommandEnvelope::<serde_json::Value>::error(
-                error.command(),
-                error.inner.category,
-                error.inner.message.clone(),
-                error.inner.details.clone(),
-            );
-            print_json(&envelope);
+    match run(cli, output_mode) {
+        Ok(code) => code,
+        Err(error) => {
+            eprintln!("error: {}", error);
+            if output_mode == OutputMode::Json {
+                let envelope = CommandEnvelope::<serde_json::Value>::error(
+                    error.command(),
+                    error.inner.category,
+                    error.inner.message.clone(),
+                    error.inner.details.clone(),
+                );
+                print_json(&envelope);
+            }
+            ExitCode::from(error.inner.exit_code() as u8)
         }
-        return ExitCode::from(error.inner.exit_code() as u8);
     }
-    ExitCode::SUCCESS
 }
 
-fn run(cli: Cli, output_mode: OutputMode) -> Result<(), CommandExecutionError> {
+fn run(cli: Cli, output_mode: OutputMode) -> Result<ExitCode, CommandExecutionError> {
     match cli.command {
         Commands::ReadConfiguration(args) => {
             let result = commands::read_configuration::run(args).map_err(|error| {
                 CommandExecutionError::new(CommandKind::ReadConfiguration, error)
             })?;
             render_success(CommandKind::ReadConfiguration, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Build(args) => {
             let result = commands::build::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Build, error))?;
             render_success(CommandKind::Build, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Up(args) => {
             let result = commands::up::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Up, error))?;
             render_success(CommandKind::Up, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
-        Commands::Exec(args) => {
-            let result = commands::exec::run(args)
-                .map_err(|error| CommandExecutionError::new(CommandKind::Exec, error))?;
-            render_success(CommandKind::Exec, result, output_mode);
-            Ok(())
-        }
+        Commands::Exec(args) => match output_mode {
+            OutputMode::Json => {
+                let result = commands::exec::run(args)
+                    .map_err(|error| CommandExecutionError::new(CommandKind::Exec, error))?;
+                let exit_status = result.exit_status;
+                render_success(CommandKind::Exec, result, output_mode);
+                Ok(exit_code_from_status(exit_status))
+            }
+            OutputMode::Text => {
+                let exit_status = commands::exec::run_attached(args)
+                    .map_err(|error| CommandExecutionError::new(CommandKind::Exec, error))?;
+                Ok(exit_code_from_status(exit_status))
+            }
+        },
         Commands::RunUserCommands(args) => {
             let result = commands::run_user_commands::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::RunUserCommands, error))?;
             render_success(CommandKind::RunUserCommands, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::SetUp(args) => {
             let result = commands::set_up::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::SetUp, error))?;
             render_success(CommandKind::SetUp, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Features(args) => {
             let result = commands::features::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Features, error))?;
             render_success(CommandKind::Features, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Templates(args) => {
             let result = commands::templates::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Templates, error))?;
             render_success(CommandKind::Templates, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Outdated(args) => {
             let result = commands::outdated::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Outdated, error))?;
             render_success(CommandKind::Outdated, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
         Commands::Upgrade(args) => {
             let result = commands::upgrade::run(args)
                 .map_err(|error| CommandExecutionError::new(CommandKind::Upgrade, error))?;
             render_success(CommandKind::Upgrade, result, output_mode);
-            Ok(())
+            Ok(ExitCode::SUCCESS)
         }
     }
 }
@@ -187,6 +199,11 @@ impl OutputMode {
     fn from_json_flag(json: bool) -> Self {
         if json { Self::Json } else { Self::Text }
     }
+}
+
+fn exit_code_from_status(status: i32) -> ExitCode {
+    let normalized = if status < 0 { 1 } else { status.min(u8::MAX as i32) as u8 };
+    ExitCode::from(normalized)
 }
 
 #[derive(Debug)]

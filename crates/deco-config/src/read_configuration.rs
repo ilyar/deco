@@ -152,20 +152,20 @@ fn resolve_config_path(
 }
 
 fn parse_jsonc(config_file: &Path, content: &str) -> Result<Value, DecoError> {
-    jsonc_parser::parse_to_serde_value(content, &Default::default())
-        .map_err(|error| {
-            DecoError::new(
-                ErrorCategory::Config,
-                format!("failed to parse config file `{}`", config_file.display()),
-            )
-            .with_details(error.to_string())
-        })?
-        .ok_or_else(|| {
-            DecoError::new(
-                ErrorCategory::Config,
-                format!("config file `{}` is empty", config_file.display()),
-            )
-        })
+    if content.trim().is_empty() {
+        return Err(DecoError::new(
+            ErrorCategory::Config,
+            format!("config file `{}` is empty", config_file.display()),
+        ));
+    }
+
+    jsonc_parser::parse_to_serde_value::<Value>(content, &Default::default()).map_err(|error| {
+        DecoError::new(
+            ErrorCategory::Config,
+            format!("failed to parse config file `{}`", config_file.display()),
+        )
+        .with_details(error.to_string())
+    })
 }
 
 fn infer_kind(configuration: &Value) -> DevcontainerConfigKind {

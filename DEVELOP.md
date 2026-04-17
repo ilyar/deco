@@ -74,7 +74,7 @@ deco --version
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
 ```
 
 Build a local optimized binary:
@@ -98,12 +98,12 @@ scripts/package-unix.sh \
 The current public pre-release target is:
 
 ```text
-v1.0.0-alpha.2
+v1.0.0-alpha.3
 ```
 
 Release workflow model:
 
-1. Push a semantic version tag such as `v1.0.0-alpha.2`.
+1. Push a semantic version tag such as `v1.0.0-alpha.3`.
 2. GitHub Actions runs the release workflow.
 3. The workflow:
    - validates version, lint, tests, parity gates, and the checked-in `.devcontainer` through `just ci`
@@ -114,7 +114,7 @@ Release workflow model:
    - creates GitHub artifact attestations for supply-chain provenance
    - creates a GitHub Release and uploads the assets
 
-Published targets for `v1.0.0-alpha.2`:
+Published targets for `v1.0.0-alpha.3`:
 
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-musl`
@@ -126,8 +126,8 @@ Published targets for `v1.0.0-alpha.2`:
 Create and push the tag:
 
 ```sh
-git tag v1.0.0-alpha.2
-git push origin v1.0.0-alpha.2
+git tag v1.0.0-alpha.3
+git push origin v1.0.0-alpha.3
 ```
 
 ## Verifying Release Provenance

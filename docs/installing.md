@@ -5,21 +5,21 @@
 The current public pre-release is:
 
 ```text
-v1.0.0-alpha.2
+v1.0.0-alpha.3
 ```
 
 Download it from:
 
-- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.2`
+- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.3`
 
 Available release assets:
 
-- `deco-v1.0.0-alpha.2-x86_64-unknown-linux-gnu.tar.gz`
-- `deco-v1.0.0-alpha.2-aarch64-unknown-linux-musl.tar.gz`
-- `deco-v1.0.0-alpha.2-x86_64-pc-windows-msvc.zip`
-- `deco-v1.0.0-alpha.2-x86_64-apple-darwin.tar.gz`
-- `deco-v1.0.0-alpha.2-aarch64-apple-darwin.tar.gz`
-- `deco-v1.0.0-alpha.2-x86_64-unknown-freebsd.tar.gz`
+- `deco-v1.0.0-alpha.3-x86_64-unknown-linux-gnu.tar.gz`
+- `deco-v1.0.0-alpha.3-aarch64-unknown-linux-musl.tar.gz`
+- `deco-v1.0.0-alpha.3-x86_64-pc-windows-msvc.zip`
+- `deco-v1.0.0-alpha.3-x86_64-apple-darwin.tar.gz`
+- `deco-v1.0.0-alpha.3-aarch64-apple-darwin.tar.gz`
+- `deco-v1.0.0-alpha.3-x86_64-unknown-freebsd.tar.gz`
 
 Each archive has a matching `.sha256` file and a GitHub artifact attestation.
 
@@ -54,14 +54,14 @@ deco --version
 For Linux, macOS, and FreeBSD, install the published binary directly:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
 ```
 
 Optional flags:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | \
-  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.2
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | \
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.3
 ```
 
 The script:
@@ -76,15 +76,15 @@ The script:
 Linux, macOS, and FreeBSD example:
 
 ```sh
-tar -xzf deco-v1.0.0-alpha.2-<target>.tar.gz
-./deco-v1.0.0-alpha.2-<target>/deco --version
+tar -xzf deco-v1.0.0-alpha.3-<target>.tar.gz
+./deco-v1.0.0-alpha.3-<target>/deco --version
 ```
 
 Windows PowerShell example:
 
 ```powershell
-Expand-Archive deco-v1.0.0-alpha.2-x86_64-pc-windows-msvc.zip
-.\deco-v1.0.0-alpha.2-x86_64-pc-windows-msvc\deco.exe --version
+Expand-Archive deco-v1.0.0-alpha.3-x86_64-pc-windows-msvc.zip
+.\deco-v1.0.0-alpha.3-x86_64-pc-windows-msvc\deco.exe --version
 ```
 
 Windows users should download the `.zip` asset from the release page directly.

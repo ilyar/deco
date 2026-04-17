@@ -37,6 +37,7 @@ pub(crate) fn run_with_engine<R: CommandRunner>(
     let target = resolve_named_target(crate::cli::TargetArgs {
         workspace_folder: args.workspace_folder.clone(),
         config: args.config.clone(),
+        id_label: args.id_label.clone(),
     })?;
     let resolved = resolve_read_configuration(
         &current_dir,
@@ -214,6 +215,7 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         std::env::set_current_dir(temp.path()).expect("cwd should be changed");
 
@@ -224,6 +226,7 @@ mod tests {
                 container_id: Some("container-123".to_string()),
                 workspace_folder: Some(temp.path().to_path_buf()),
                 config: None,
+                id_label: Vec::new(),
             },
             DockerEngine::with_runner(runner),
         )
@@ -257,12 +260,18 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         std::env::set_current_dir(temp.path()).expect("cwd should be changed");
         let runner = SequencedRunner::new(vec![
             CommandOutput {
                 status: 0,
-                stdout: r#"[{"ID":"compose-container-1","Name":"project-app-1","Service":"app","State":"running","Status":"Up"}]"#.to_string(),
+                stdout: "container-123\n".to_string(),
+                stderr: String::new(),
+            },
+            CommandOutput {
+                status: 0,
+                stdout: r#"[{"Id":"container-123","State":{"Running":true}}]"#.to_string(),
                 stderr: String::new(),
             },
             CommandOutput { status: 0, stdout: String::new(), stderr: String::new() },
@@ -273,6 +282,7 @@ mod tests {
                 container_id: None,
                 workspace_folder: Some(temp.path().to_path_buf()),
                 config: None,
+                id_label: Vec::new(),
             },
             DockerEngine::with_runner(runner),
         )
@@ -280,9 +290,12 @@ mod tests {
         std::env::set_current_dir(previous_dir).expect("cwd should be restored");
 
         let invocations = captured.lock().expect("lock should work");
-        assert_eq!(invocations[0].args[1], OsString::from("--workdir"));
-        assert!(invocations[0].args[2].to_string_lossy().starts_with("/workspaces/"));
-        assert_eq!(result.container_id, invocations[0].args[3].to_string_lossy());
+        assert_eq!(invocations[0].args[0], OsString::from("ps"));
+        assert_eq!(invocations[1].args[0], OsString::from("inspect"));
+        assert_eq!(invocations[2].args[0], OsString::from("exec"));
+        assert_eq!(invocations[2].args[1], OsString::from("--workdir"));
+        assert!(invocations[2].args[2].to_string_lossy().starts_with("/workspaces/"));
+        assert_eq!(result.container_id, "container-123");
     }
 
     #[test]
@@ -296,6 +309,7 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         std::env::set_current_dir(temp.path()).expect("cwd should be changed");
         let runner = SequencedRunner::new(vec![
@@ -312,6 +326,7 @@ mod tests {
                 container_id: None,
                 workspace_folder: Some(temp.path().to_path_buf()),
                 config: None,
+                id_label: Vec::new(),
             },
             DockerEngine::with_runner(runner),
         )

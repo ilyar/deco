@@ -19,10 +19,7 @@ pub fn run(args: TemplatesArgs) -> Result<TemplatesCommandResult, DecoError> {
 }
 
 pub fn run_metadata(args: TemplatesMetadataArgs) -> Result<TemplatesMetadataResult, DecoError> {
-    let current_dir = env::current_dir().map_err(|error| {
-        DecoError::new(ErrorCategory::Internal, "failed to determine current working directory")
-            .with_details(error.to_string())
-    })?;
+    let current_dir = current_dir_or_root();
     let manifest_path = resolve_template_input_path(
         &current_dir,
         args.manifest_path,
@@ -33,10 +30,7 @@ pub fn run_metadata(args: TemplatesMetadataArgs) -> Result<TemplatesMetadataResu
 }
 
 pub fn run_apply(args: TemplatesApplyArgs) -> Result<TemplateApplyResult, DecoError> {
-    let current_dir = env::current_dir().map_err(|error| {
-        DecoError::new(ErrorCategory::Internal, "failed to determine current working directory")
-            .with_details(error.to_string())
-    })?;
+    let current_dir = current_dir_or_root();
     let manifest_path = resolve_template_input_path(
         &current_dir,
         args.manifest_path,
@@ -57,6 +51,10 @@ pub enum TemplatesCommandResult {
 
 fn absolutize(base: &Path, value: PathBuf) -> PathBuf {
     if value.is_absolute() { value } else { base.join(value) }
+}
+
+fn current_dir_or_root() -> PathBuf {
+    env::current_dir().unwrap_or_else(|_| PathBuf::from("/"))
 }
 
 fn resolve_template_input_path(

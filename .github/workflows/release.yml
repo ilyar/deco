@@ -247,7 +247,7 @@ jobs:
           cat > RELEASE_NOTES.md <<EOF
           ## deco ${GITHUB_REF_NAME}
 
-          First public alpha release with downloadable binaries for Linux, Windows, macOS, and FreeBSD.
+          Public alpha release with downloadable binaries for Linux, Windows, macOS, and FreeBSD.
 
           Included assets:
 

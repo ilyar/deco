@@ -28,6 +28,7 @@ pub(crate) fn run_with_engine<R: CommandRunner + Clone>(
             container_id: Some(up_result.container_id.clone()),
             workspace_folder: args.target.workspace_folder.clone(),
             config: args.target.config.clone(),
+            id_label: args.target.id_label.clone(),
         },
         engine,
     )?;
@@ -89,10 +90,13 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         env::set_current_dir(temp.path()).expect("cwd should be changed");
 
         let runner = SequencedRunner::new(vec![
+            CommandOutput { status: 0, stdout: String::new(), stderr: String::new() },
+            CommandOutput { status: 0, stdout: String::new(), stderr: String::new() },
             CommandOutput { status: 1, stdout: String::new(), stderr: "missing".to_string() },
             CommandOutput {
                 status: 0,
@@ -109,6 +113,7 @@ mod tests {
                 target: crate::cli::TargetArgs {
                     workspace_folder: Some(temp.path().to_path_buf()),
                     config: None,
+                    id_label: Vec::new(),
                 },
             },
             DockerEngine::with_runner(runner),
@@ -123,11 +128,13 @@ mod tests {
         assert_eq!(result.lifecycle.planned_steps, 1);
 
         let invocations = captured.lock().expect("lock should work");
-        assert_eq!(invocations.len(), 4);
-        assert_eq!(invocations[0].args[0], OsString::from("inspect"));
-        assert_eq!(invocations[1].args[0], OsString::from("create"));
-        assert_eq!(invocations[2].args[0], OsString::from("start"));
-        assert_eq!(invocations[3].args[0], OsString::from("exec"));
-        assert_eq!(invocations[3].args[3], OsString::from("container-123"));
+        assert_eq!(invocations.len(), 6);
+        assert_eq!(invocations[0].args[0], OsString::from("ps"));
+        assert_eq!(invocations[1].args[0], OsString::from("ps"));
+        assert_eq!(invocations[2].args[0], OsString::from("inspect"));
+        assert_eq!(invocations[3].args[0], OsString::from("create"));
+        assert_eq!(invocations[4].args[0], OsString::from("start"));
+        assert_eq!(invocations[5].args[0], OsString::from("exec"));
+        assert_eq!(invocations[5].args[3], OsString::from("container-123"));
     }
 }

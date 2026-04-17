@@ -193,6 +193,7 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         std::env::set_current_dir(temp.path()).expect("cwd should be changed");
 
@@ -200,7 +201,11 @@ mod tests {
         let captured = runner.invocations.clone();
         let engine = DockerEngine::with_runner(runner);
         let result = run_with_engine(
-            TargetArgs { workspace_folder: Some(temp.path().to_path_buf()), config: None },
+            TargetArgs {
+                workspace_folder: Some(temp.path().to_path_buf()),
+                config: None,
+                id_label: Vec::new(),
+            },
             engine,
         )
         .expect("build should succeed");
@@ -234,13 +239,18 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         std::env::set_current_dir(temp.path()).expect("cwd should be changed");
 
         let runner = RecordingRunner::default();
         let captured = runner.invocations.clone();
         let result = run_with_engine(
-            TargetArgs { workspace_folder: Some(temp.path().to_path_buf()), config: None },
+            TargetArgs {
+                workspace_folder: Some(temp.path().to_path_buf()),
+                config: None,
+                id_label: Vec::new(),
+            },
             DockerEngine::with_runner(runner),
         )
         .expect("compose build should succeed");

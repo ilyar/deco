@@ -1,3 +1,6 @@
+<h3 align="center">deco</h3>
+<p align="center">dev container CLI for reading devcontainer configs</p>
+
 # deco
 
 `deco` is a Rust-first dev container CLI for reading devcontainer configs, preparing a local runtime, and running common devcontainer workflows from the terminal.
@@ -14,7 +17,7 @@ Use `deco` if you want to:
 
 ## Current Status
 
-`deco` is being prepared for the current public alpha release: `v1.0.0-alpha.2`.
+`deco` is being prepared for the current public alpha release: `v1.0.0-alpha.3`.
 
 What is already covered:
 
@@ -43,14 +46,14 @@ deco --help
 Install the published Unix binary with:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | bash
 ```
 
 Pick a different directory or explicit tag if needed:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.2/scripts/install.sh | \
-  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.2
+curl -fsSL https://raw.githubusercontent.com/ilyar/deco/v1.0.0-alpha.3/scripts/install.sh | \
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.3
 ```
 
 Prebuilt binaries are published on GitHub Releases for:
@@ -64,7 +67,7 @@ Prebuilt binaries are published on GitHub Releases for:
 
 Download the asset that matches your platform from:
 
-- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.2`
+- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.3`
 
 For local development without install:
 

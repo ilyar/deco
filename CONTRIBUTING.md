@@ -52,7 +52,7 @@ deco run-user-commands --workspace-folder /path/to/workspace
 Releases are produced from Git tags such as:
 
 ```text
-v1.0.0-alpha.2
+v1.0.0-alpha.3
 ```
 
 The tag-triggered workflow validates the release gates, builds the published binaries, publishes a GitHub Release, and generates artifact attestations for supply-chain provenance.
@@ -61,7 +61,7 @@ Use the checked-in dev container when you want a reproducible contributor enviro
 
 The canonical local task entrypoint is [Justfile](./Justfile). Prefer `just` over ad hoc command sequences.
 
-Expected published targets for `v1.0.0-alpha.2`:
+Expected published targets for `v1.0.0-alpha.3`:
 
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-musl`

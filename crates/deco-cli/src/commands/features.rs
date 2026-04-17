@@ -167,6 +167,7 @@ mod tests {
         )
         .expect("config should be written");
 
+        let _cwd_guard = crate::test_support::cwd_lock();
         let previous_dir = env::current_dir().expect("cwd should be available");
         env::set_current_dir(temp.path()).expect("cwd should be changed");
 

@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
@@ -290,6 +291,15 @@ impl<R: CommandRunner> DockerEngine<R> {
         self.run([OsString::from("start"), OsString::from(container)]).map(to_primitive_result)
     }
 
+    pub fn remove(&self, container: &str, force: bool) -> Result<PrimitiveResult, EngineError> {
+        let mut args = vec![OsString::from("rm")];
+        if force {
+            args.push(OsString::from("-f"));
+        }
+        args.push(OsString::from(container));
+        self.run(args).map(to_primitive_result)
+    }
+
     pub fn exec(&self, request: ExecRequest) -> Result<PrimitiveResult, EngineError> {
         if request.command.is_empty() {
             return Err(EngineError::InvalidRequest {
@@ -332,7 +342,69 @@ impl<R: CommandRunner> DockerEngine<R> {
         args.push(OsString::from(request.container));
         args.extend(request.command.into_iter().map(OsString::from));
 
-        self.run(args).map(to_primitive_result)
+        self.runner.run(&self.docker_binary, &args).map(to_primitive_result)
+    }
+
+    pub fn exec_attached(&self, request: ExecRequest) -> Result<i32, EngineError> {
+        if request.command.is_empty() {
+            return Err(EngineError::InvalidRequest {
+                message: "exec requires a command".to_string(),
+            });
+        }
+
+        let mut args = vec![OsString::from("exec")];
+        if request.detach {
+            args.push(OsString::from("-d"));
+        }
+        if request.interactive {
+            args.push(OsString::from("-i"));
+        }
+        if request.tty {
+            args.push(OsString::from("-t"));
+        }
+        if request.privileged {
+            args.push(OsString::from("--privileged"));
+        }
+        if request.remove {
+            args.push(OsString::from("--rm"));
+        }
+        if let Some(workdir) = request.workdir {
+            args.push(OsString::from("--workdir"));
+            args.push(OsString::from(workdir));
+        }
+        if let Some(user) = request.user {
+            args.push(OsString::from("--user"));
+            args.push(OsString::from(user));
+        }
+        for (key, value) in request.env {
+            args.push(OsString::from("--env"));
+            args.push(OsString::from(format!("{key}={value}")));
+        }
+        for (key, value) in request.labels {
+            args.push(OsString::from("--label"));
+            args.push(OsString::from(format!("{key}={value}")));
+        }
+        args.push(OsString::from(request.container));
+        args.extend(request.command.into_iter().map(OsString::from));
+
+        self.runner.run_attached(&self.docker_binary, &args)
+    }
+
+    pub fn find_container_by_labels(
+        &self,
+        labels: &[(String, String)],
+    ) -> Result<Option<ContainerInspectResult>, EngineError> {
+        let mut seen = HashSet::new();
+        for container_id in self.list_container_ids_by_labels(labels)? {
+            if !seen.insert(container_id.clone()) {
+                continue;
+            }
+            let inspect = self.inspect(&container_id)?;
+            if !container_is_removing(&inspect.raw) {
+                return Ok(Some(inspect));
+            }
+        }
+        Ok(None)
     }
 
     pub fn compose_build(
@@ -498,10 +570,36 @@ impl<R: CommandRunner> DockerEngine<R> {
 
         Ok(output)
     }
+
+    fn list_container_ids_by_labels(
+        &self,
+        labels: &[(String, String)],
+    ) -> Result<Vec<String>, EngineError> {
+        let mut args = vec![OsString::from("ps"), OsString::from("-q"), OsString::from("-a")];
+        for (key, value) in labels {
+            args.push(OsString::from("--filter"));
+            args.push(OsString::from(format!("label={key}={value}")));
+        }
+        let output = self.run(args)?;
+        Ok(output
+            .stdout
+            .lines()
+            .map(str::trim)
+            .filter(|line| !line.is_empty())
+            .map(ToOwned::to_owned)
+            .collect())
+    }
 }
 
 fn to_primitive_result(output: CommandOutput) -> PrimitiveResult {
     output.into()
+}
+
+fn container_is_removing(raw: &Value) -> bool {
+    raw.get("State")
+        .and_then(|state| state.get("Status"))
+        .and_then(Value::as_str)
+        .is_some_and(|status| status == "removing")
 }
 
 fn compose_base_args(project: &ComposeProjectRequest) -> Vec<OsString> {
@@ -817,6 +915,27 @@ mod tests {
                     OsString::from("app"),
                     OsString::from("db"),
                 ],
+            }]
+        );
+    }
+
+    #[test]
+    fn remove_formats_expected_arguments() {
+        let runner = std::rc::Rc::new(FakeRunner::default());
+        runner.push_response(Ok(CommandOutput {
+            status: 0,
+            stdout: "removed".to_string(),
+            stderr: String::new(),
+        }));
+
+        let engine = DockerEngine::with_binary_and_runner("docker", runner.clone());
+        engine.remove("deco-old", true).expect("remove result");
+
+        assert_eq!(
+            runner.invocations(),
+            vec![CommandInvocation {
+                program: OsString::from("docker"),
+                args: vec![OsString::from("rm"), OsString::from("-f"), OsString::from("deco-old"),],
             }]
         );
     }
