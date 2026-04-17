@@ -2,9 +2,6 @@
 
 Developer guide for building, testing, packaging, and releasing `deco`.
 
-License: MIT  
-Author: ilyar
-
 ## Prerequisites
 
 - Rust stable with `cargo`

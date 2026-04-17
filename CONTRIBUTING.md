@@ -2,9 +2,6 @@
 
 Contribution guide for `deco`.
 
-License: MIT  
-Author: ilyar
-
 ## Before You Open a Pull Request
 
 Run the required local checks from `repo/deco`:

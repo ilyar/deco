@@ -2,9 +2,6 @@
 
 `deco` is a Rust-first dev container CLI for reading devcontainer configs, preparing a local runtime, and running common devcontainer workflows from the terminal.
 
-License: MIT  
-Author: ilyar
-
 ## Who This Is For
 
 Use `deco` if you want to:

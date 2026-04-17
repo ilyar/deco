@@ -1,8 +1,5 @@
 # Installing and Releasing
 
-License: MIT
-Author: ilyar
-
 ## Download Prebuilt Releases
 
 The current public pre-release is:
