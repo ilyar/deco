@@ -19,7 +19,9 @@ pub fn main_entry() -> ExitCode {
     match run(cli, output_mode) {
         Ok(code) => code,
         Err(error) => {
-            eprintln!("error: {}", error);
+            for line in render_error_lines(output_mode, &error) {
+                eprintln!("{line}");
+            }
             if output_mode == OutputMode::Json {
                 let envelope = CommandEnvelope::<serde_json::Value>::error(
                     error.command(),
@@ -181,6 +183,16 @@ fn render_text(command: CommandKind, value: &Value) -> String {
     }
 }
 
+fn render_error_lines(output_mode: OutputMode, error: &CommandExecutionError) -> Vec<String> {
+    let mut lines = vec![format!("error: {}", error.inner.message)];
+    if output_mode == OutputMode::Text
+        && let Some(details) = error.inner.details.as_deref().filter(|details| !details.is_empty())
+    {
+        lines.push(details.to_string());
+    }
+    lines
+}
+
 fn str_field<'a>(value: &'a Value, field: &str) -> Option<&'a str> {
     value.get(field).and_then(Value::as_str)
 }
@@ -225,5 +237,38 @@ impl CommandExecutionError {
 impl fmt::Display for CommandExecutionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.inner)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use deco_core_model::{DecoError, ErrorCategory};
+
+    use super::{CommandExecutionError, CommandKind, OutputMode, render_error_lines};
+
+    #[test]
+    fn text_errors_include_details_when_present() {
+        let error = CommandExecutionError::new(
+            CommandKind::Up,
+            DecoError::new(ErrorCategory::Engine, "docker failed").with_details("socket denied"),
+        );
+
+        assert_eq!(
+            render_error_lines(OutputMode::Text, &error),
+            vec!["error: docker failed".to_string(), "socket denied".to_string()]
+        );
+    }
+
+    #[test]
+    fn json_errors_do_not_duplicate_details_in_stderr() {
+        let error = CommandExecutionError::new(
+            CommandKind::Up,
+            DecoError::new(ErrorCategory::Engine, "docker failed").with_details("socket denied"),
+        );
+
+        assert_eq!(
+            render_error_lines(OutputMode::Json, &error),
+            vec!["error: docker failed".to_string()]
+        );
     }
 }

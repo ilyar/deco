@@ -1247,6 +1247,50 @@ esac
 }
 
 #[test]
+fn up_surfaces_docker_stderr_in_text_mode() {
+    let temp = tempdir().expect("tempdir should be created");
+    let workspace = temp.path().join("workspace");
+    let config_dir = workspace.join(".devcontainer");
+    let fake_bin = temp.path().join("bin");
+    fs::create_dir_all(&config_dir).expect("config directory should exist");
+    fs::create_dir_all(&fake_bin).expect("fake bin directory should exist");
+    fs::write(config_dir.join("devcontainer.json"), r#"{ "image": "alpine:3.20" }"#)
+        .expect("config file should be written");
+
+    let docker_script = fake_bin.join("docker");
+    let mut file = fs::File::create(&docker_script).expect("docker script should be created");
+    writeln!(
+        file,
+        r#"#!/bin/sh
+printf 'permission denied while trying to connect to the docker API at unix:///var/run/docker.sock\n' >&2
+exit 1
+"#
+    )
+    .expect("docker script should be written");
+    drop(file);
+    let mut permissions =
+        fs::metadata(&docker_script).expect("docker script metadata should exist").permissions();
+    permissions.set_mode(0o755);
+    fs::set_permissions(&docker_script, permissions).expect("docker script should be executable");
+
+    let old_path = std::env::var_os("PATH").expect("PATH should exist");
+
+    let mut command = deco_text_command();
+    command.arg("up").arg("--workspace-folder").arg(&workspace);
+    command.current_dir(&workspace);
+    command.env("PATH", format!("{}:{}", fake_bin.display(), old_path.to_string_lossy()));
+
+    command
+        .assert()
+        .code(4)
+        .stdout(predicates::str::is_empty())
+        .stderr(predicates::str::contains("error: `docker` exited with status 1"))
+        .stderr(predicates::str::contains(
+            "permission denied while trying to connect to the docker API at unix:///var/run/docker.sock",
+        ));
+}
+
+#[test]
 fn exec_json_mode_preserves_machine_readable_output() {
     let temp = tempdir().expect("tempdir should be created");
     let workspace = temp.path().join("workspace");
