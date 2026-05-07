@@ -3,9 +3,17 @@ set shell := ["bash", "-euo", "pipefail", "-c"]
 default:
   @just --list
 
+install-hooks:
+  git config core.hooksPath .githooks
+
 install-script-check:
   bash -n install.sh
   bash -n scripts/install.sh
+  bash -n .githooks/commit-msg
+  bash -n scripts/check-commit-msg-hook.sh
+
+hook-check:
+  scripts/check-commit-msg-hook.sh
 
 fmt:
   cargo fmt --check
@@ -32,7 +40,7 @@ parity: test-parity
 
 test: build-root test-workspace test-cli-lib test-cli-smoke test-parity
 
-ci: install-script-check fmt lint test verify-self-devcontainer
+ci: install-script-check hook-check fmt lint test verify-self-devcontainer
 
 install:
   cargo install --path . --locked

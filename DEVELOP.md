@@ -34,6 +34,7 @@ The preferred task runner is [Justfile](./Justfile).
 Typical commands:
 
 ```sh
+just install-hooks
 just ci
 just build-release
 just verify-self-devcontainer
@@ -50,6 +51,7 @@ just deco-exec pwd
 The standard local gates are:
 
 ```sh
+just install-hooks
 just ci
 ```
 
@@ -61,6 +63,8 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test -q
 cargo test -q -p deco-cli --test parity_harness
 ```
+
+`just install-hooks` enables the checked-in `commit-msg` hook from `.githooks/` so local commits are validated against Conventional Commits.
 
 ## Install and Release Build
 

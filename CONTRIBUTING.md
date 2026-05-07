@@ -7,6 +7,7 @@ Contribution guide for `deco`.
 Run the required local checks from `repo/deco`:
 
 ```sh
+just install-hooks
 just ci
 ```
 
@@ -18,6 +19,8 @@ cargo clippy --workspace --all-targets -- -D warnings
 cargo test -q
 cargo test -q -p deco-cli --test parity_harness
 ```
+
+`just install-hooks` configures Git to use the versioned `commit-msg` hook in `.githooks/`, which rejects non-Conventional Commit subjects.
 
 ## Scope Expectations
 
