@@ -98,12 +98,12 @@ scripts/package-unix.sh \
 The current public pre-release target is:
 
 ```text
-v1.0.0-alpha.3
+v1.0.0-alpha.4
 ```
 
 Release workflow model:
 
-1. Push a semantic version tag such as `v1.0.0-alpha.3`.
+1. Push a semantic version tag such as `v1.0.0-alpha.4`.
 2. GitHub Actions runs the release workflow.
 3. The workflow:
    - validates version, lint, tests, parity gates, and the checked-in `.devcontainer` through `just ci`
@@ -114,7 +114,7 @@ Release workflow model:
    - creates GitHub artifact attestations for supply-chain provenance
    - creates a GitHub Release and uploads the assets
 
-Published targets for `v1.0.0-alpha.3`:
+Published targets for `v1.0.0-alpha.4`:
 
 - `x86_64-unknown-linux-gnu`
 - `aarch64-unknown-linux-musl`
@@ -126,8 +126,8 @@ Published targets for `v1.0.0-alpha.3`:
 Create and push the tag:
 
 ```sh
-git tag v1.0.0-alpha.3
-git push origin v1.0.0-alpha.3
+git tag v1.0.0-alpha.4
+git push origin v1.0.0-alpha.4
 ```
 
 ## Verifying Release Provenance

@@ -17,7 +17,7 @@ Use `deco` if you want to:
 
 ## Current Status
 
-`deco` is being prepared for the current public alpha release: `v1.0.0-alpha.3`.
+`deco` is being prepared for the current public alpha release: `v1.0.0-alpha.4`.
 
 What is already covered:
 
@@ -53,7 +53,7 @@ Pick a different directory or explicit tag if needed:
 
 ```sh
 curl -fsSL https://raw.githubusercontent.com/ilyar/deco/refs/heads/main/install.sh | \
-  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.3
+  bash -s -- --install-dir "$HOME/.local/bin" --version v1.0.0-alpha.4
 ```
 
 Prebuilt binaries are published on GitHub Releases for:
@@ -67,7 +67,7 @@ Prebuilt binaries are published on GitHub Releases for:
 
 Download the asset that matches your platform from:
 
-- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.3`
+- `https://github.com/ilyar/deco/releases/tag/v1.0.0-alpha.4`
 
 For local development without install:
 

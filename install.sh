@@ -2,7 +2,7 @@
 set -euo pipefail
 
 REPO="${DECO_INSTALL_REPO:-ilyar/deco}"
-VERSION="${DECO_VERSION:-v1.0.0-alpha.3}"
+VERSION="${DECO_VERSION:-v1.0.0-alpha.4}"
 INSTALL_DIR="${DECO_INSTALL_DIR:-$HOME/.local/bin}"
 TMP_DIR="$(mktemp -d)"
 
